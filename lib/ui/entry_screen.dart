@@ -164,9 +164,9 @@ class _EntryScreenState extends State<EntryScreen> {
                 value: _categoryController.text.isEmpty ? null : _categoryController.text,
                 decoration: const InputDecoration(labelText: '类型'),
                 items: [
-                  {'val': 'Library', 'label': '买断'},
-                  {'val': 'Service', 'label': '内购'},
-                  {'val': 'Hardware', 'label': '硬件/外设'},
+                  {'val': 'Library', 'label': '单机/买断'},
+                  {'val': 'Service', 'label': '网游/内购'},
+                  {'val': 'Hardware', 'label': '游戏相关'},
                 ].map((item) {
                   return DropdownMenuItem<String>(
                     value: item['val'] as String,

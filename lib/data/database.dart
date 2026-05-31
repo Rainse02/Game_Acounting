@@ -65,6 +65,8 @@ class AppDatabase extends _$AppDatabase {
   // Entries
   Future<int> addEntry(EntriesCompanion entry) => into(entries).insert(entry);
 
+  Future<int> deleteEntry(Entry entry) => delete(entries).delete(entry);
+
   Stream<List<Entry>> watchAllEntries() => select(entries).watch();
 
   Stream<List<EntryWithGame>> watchAllEntriesWithGame() {

@@ -80,6 +80,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ButtonSegment(value: 'All', label: Text('全部'), icon: Icon(Icons.all_inclusive)),
           ButtonSegment(value: 'Library', label: Text('买断'), icon: Icon(Icons.collections_bookmark)),
           ButtonSegment(value: 'Service', label: Text('内购'), icon: Icon(Icons.subscriptions)),
+          ButtonSegment(value: 'Hardware', label: Text('相关'), icon: Icon(Icons.settings_input_component)),
         ],
         selected: {_selectedCategory},
         onSelectionChanged: (Set<String> newSelection) {
@@ -142,96 +143,218 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Widget _buildPieChart(List<EntryWithGame> entries) {
-    final Map<String, double> categoryTotals = {};
+    final Map<String, double> categoryTotals = {
+      'Library': 0.0,
+      'Service': 0.0,
+      'Hardware': 0.0,
+    };
+    
     for (var entry in entries) {
       final category = entry.game.category;
       categoryTotals[category] = (categoryTotals[category] ?? 0) + (entry.entry.price * entry.entry.quantity);
     }
 
     final List<PieChartSectionData> sections = [];
-    final colors = [Colors.deepPurple, Colors.orange, Colors.cyan, Colors.pink, Colors.green];
-    int colorIndex = 0;
+    final labels = {'Library': '买断', 'Service': '内购', 'Hardware': '相关'};
+    final colors = {'Library': Colors.deepPurple, 'Service': Colors.orange, 'Hardware': Colors.cyan};
 
     categoryTotals.forEach((category, total) {
-      sections.add(PieChartSectionData(
-        color: colors[colorIndex % colors.length],
-        value: total,
-        title: category,
-        radius: 50,
-        titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
-      ));
-      colorIndex++;
+      if (total > 0) {
+        sections.add(PieChartSectionData(
+          color: colors[category] ?? Colors.grey,
+          value: total,
+          title: labels[category],
+          radius: 60,
+          titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
+        ));
+      }
     });
 
-    return SizedBox(
-      height: 200,
-      child: PieChart(
-        PieChartData(
-          sections: sections,
-          sectionsSpace: 2,
-          centerSpaceRadius: 40,
+    if (sections.isEmpty) return const Center(child: Text('暂无分类数据'));
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 200,
+          child: PieChart(
+            PieChartData(
+              pieTouchData: PieTouchData(
+                touchCallback: (FlTouchEvent event, pieTouchResponse) {
+                  // Catch any interaction that results in a touched section
+                  if (event is FlTapUpEvent && pieTouchResponse != null && pieTouchResponse.touchedSection != null) {
+                    final index = pieTouchResponse.touchedSection!.touchedSectionIndex;
+                    if (index >= 0 && index < sections.length) {
+                      final categoryLabel = sections[index].title;
+                      debugPrint('PIE_CLICK: $categoryLabel');
+                      
+                      try {
+                        final categoryKey = labels.keys.firstWhere((k) => labels[k] == categoryLabel);
+                        _showCategoryDrillDown(context, categoryLabel, entries.where((e) => e.game.category == categoryKey).toList());
+                      } catch (e) {
+                        debugPrint('PIE_ERROR: $e');
+                      }
+                    }
+                  }
+                },
+              ),
+              sections: sections,
+              sectionsSpace: 2,
+              centerSpaceRadius: 40,
+            ),
+          ),
         ),
+        const Padding(
+          padding: EdgeInsets.only(top: 8.0),
+          child: Text('提示：点击圆环查看分类明细', style: TextStyle(fontSize: 12, color: Colors.grey)),
+        ),
+      ],
+    );
+  }
+
+  void _showCategoryDrillDown(BuildContext context, String title, List<EntryWithGame> filteredEntries) {
+    final Map<String, List<EntryWithGame>> gameGroups = {};
+    for (var e in filteredEntries) {
+      gameGroups.putIfAbsent(e.game.name, () => []).add(e);
+    }
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) => DraggableScrollableSheet(
+        initialChildSize: 0.6,
+        maxChildSize: 0.9,
+        minChildSize: 0.4,
+        expand: false,
+        builder: (context, scrollController) {
+          return Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Text('$title 消费明细', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              ),
+              const Divider(),
+              Expanded(
+                child: ListView.builder(
+                  controller: scrollController,
+                  itemCount: gameGroups.length,
+                  itemBuilder: (context, index) {
+                    final gameName = gameGroups.keys.elementAt(index);
+                    final entries = gameGroups[gameName]!;
+                    final gameTotal = entries.fold(0.0, (sum, e) => sum + (e.entry.price * e.entry.quantity));
+
+                    return ExpansionTile(
+                      title: Text(gameName),
+                      trailing: Text('¥${gameTotal.toStringAsFixed(2)}', style: const TextStyle(fontWeight: FontWeight.bold)),
+                      children: entries.map((e) => ListTile(
+                        title: Text(e.entry.itemName),
+                        subtitle: Text(DateFormat('yyyy-MM-dd').format(e.entry.date)),
+                        trailing: Text('¥${(e.entry.price * e.entry.quantity).toStringAsFixed(2)}'),
+                      )).toList(),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
 
   Widget _buildBarChart(List<EntryWithGame> entries) {
-    // Group by month
     final Map<String, double> monthlyTotals = {};
+    final Map<String, List<EntryWithGame>> monthlyEntries = {};
+
     for (var entry in entries) {
       final month = DateFormat('MMM').format(entry.entry.date);
       monthlyTotals[month] = (monthlyTotals[month] ?? 0) + (entry.entry.price * entry.entry.quantity);
+      monthlyEntries.putIfAbsent(month, () => []).add(entry);
     }
 
-    // Sort months? For simplicity let's just take the last 6 months or what we have.
     final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
     final presentMonths = months.where((m) => monthlyTotals.containsKey(m)).toList();
 
-    return SizedBox(
-      height: 250,
-      child: BarChart(
-        BarChartData(
-          alignment: BarChartAlignment.spaceAround,
-          maxY: monthlyTotals.values.isEmpty ? 10 : monthlyTotals.values.reduce((a, b) => a > b ? a : b) * 1.2,
-          barTouchData: BarTouchData(enabled: true),
-          titlesData: FlTitlesData(
-            show: true,
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(
-                showTitles: true,
-                getTitlesWidget: (value, meta) {
-                  if (value.toInt() >= 0 && value.toInt() < presentMonths.length) {
-                    return Padding(
-                      padding: const EdgeInsets.only(top: 8.0),
-                      child: Text(presentMonths[value.toInt()], style: const TextStyle(fontSize: 10)),
-                    );
+    return Column(
+      children: [
+        SizedBox(
+          height: 250,
+          child: BarChart(
+            BarChartData(
+              alignment: BarChartAlignment.spaceAround,
+              maxY: monthlyTotals.values.isEmpty ? 10 : monthlyTotals.values.reduce((a, b) => a > b ? a : b) * 1.2,
+              barTouchData: BarTouchData(
+                enabled: true,
+                touchCallback: (FlTouchEvent event, barTouchResponse) {
+                  if (event is FlTapUpEvent && barTouchResponse != null && barTouchResponse.spot != null) {
+                    final index = barTouchResponse.spot!.touchedBarGroupIndex;
+                    if (index >= 0 && index < presentMonths.length) {
+                      final monthName = presentMonths[index];
+                      debugPrint('BAR_CLICK: $monthName');
+                      _showCategoryDrillDown(context, monthName, monthlyEntries[monthName]!);
+                    }
                   }
-                  return const Text('');
                 },
-              ),
-            ),
-            leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-          ),
-          gridData: const FlGridData(show: false),
-          borderData: FlBorderData(show: false),
-          barGroups: List.generate(presentMonths.length, (index) {
-            final month = presentMonths[index];
-            return BarChartGroupData(
-              x: index,
-              barRods: [
-                BarChartRodData(
-                  toY: monthlyTotals[month]!,
-                  color: Theme.of(context).colorScheme.primary,
-                  width: 16,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                touchTooltipData: BarTouchTooltipData(
+                  tooltipBgColor: Colors.blueGrey,
+                  getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                    return BarTooltipItem(
+                      '${presentMonths[group.x.toInt()]}\n',
+                      const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      children: [
+                        TextSpan(
+                          text: '¥${rod.toY.toStringAsFixed(2)}',
+                          style: const TextStyle(color: Colors.yellowAccent),
+                        ),
+                      ],
+                    );
+                  },
                 ),
-              ],
-            );
-          }),
+              ),
+              titlesData: FlTitlesData(
+                show: true,
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true,
+                    getTitlesWidget: (value, meta) {
+                      if (value.toInt() >= 0 && value.toInt() < presentMonths.length) {
+                        return Padding(
+                          padding: const EdgeInsets.only(top: 8.0),
+                          child: Text(presentMonths[value.toInt()], style: const TextStyle(fontSize: 10)),
+                        );
+                      }
+                      return const Text('');
+                    },
+                  ),
+                ),
+                leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              ),
+              gridData: const FlGridData(show: false),
+              borderData: FlBorderData(show: false),
+              barGroups: List.generate(presentMonths.length, (index) {
+                final month = presentMonths[index];
+                return BarChartGroupData(
+                  x: index,
+                  barRods: [
+                    BarChartRodData(
+                      toY: monthlyTotals[month]!,
+                      color: Theme.of(context).colorScheme.primary,
+                      width: 16,
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(4)),
+                    ),
+                  ],
+                );
+              }),
+            ),
+          ),
         ),
-      ),
+        const Padding(
+          padding: EdgeInsets.only(top: 8.0),
+          child: Text('提示：点击柱状图查看月度明细', style: TextStyle(fontSize: 12, color: Colors.grey)),
+        ),
+      ],
     );
   }
 }

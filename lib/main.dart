@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'data/database.dart';
-import 'ui/entry_screen.dart';
 import 'ui/dashboard_screen.dart';
+import 'ui/entry_list_screen.dart';
+import 'ui/data_management_screen.dart';
+import 'ui/entry_screen.dart';
 
 void main() {
   runApp(
@@ -20,7 +22,8 @@ class GameAccountingApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: '个人游戏账本 Pro',
+      title: 'GameA',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
@@ -38,20 +41,20 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int _selectedIndex = 1; // Start with Dashboard
+  int _selectedIndex = 0;
 
   @override
   void initState() {
     super.initState();
-    // Seed initial data on startup
     WidgetsBinding.instance.addPostFrameCallback((_) {
       context.read<AppDatabase>().seedInitialData();
     });
   }
 
-  static const List<Widget> _widgetOptions = <Widget>[
-    Center(child: Text('明细列表 (即将推出)')),
-    DashboardScreen(),
+  final List<Widget> _widgetOptions = <Widget>[
+    const DashboardScreen(),
+    const EntryListScreen(),
+    const DataManagementScreen(),
   ];
 
   void _onItemTapped(int index) {
@@ -63,30 +66,40 @@ class _HomePageState extends State<HomePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _widgetOptions.elementAt(_selectedIndex),
+      body: IndexedStack(
+        index: _selectedIndex,
+        children: _widgetOptions,
+      ),
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
         items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard),
+            label: '看板',
+          ),
           BottomNavigationBarItem(
             icon: Icon(Icons.list),
             label: '明细',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: '看板',
+            icon: Icon(Icons.storage),
+            label: '数据',
           ),
         ],
         currentIndex: _selectedIndex,
         selectedItemColor: Theme.of(context).colorScheme.primary,
         onTap: _onItemTapped,
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          Navigator.of(context).push(
-            MaterialPageRoute(builder: (context) => const EntryScreen()),
-          );
-        },
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: _selectedIndex != 2 // Hide FAB on data management
+          ? FloatingActionButton(
+              onPressed: () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(builder: (context) => const EntryScreen()),
+                );
+              },
+              child: const Icon(Icons.add),
+            )
+          : null,
     );
   }
 }
