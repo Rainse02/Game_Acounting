@@ -1,10 +1,7 @@
 # 游戏账本(Game Accounting)
 
 一个简单的跨平台（Windows & Android）游戏消费管理应用。(初版为基于Streamlit Web开发)。
-<<<<<<< HEAD
 
-=======
->>>>>>> c4b3120e9365bb21a885cca41a7800c0728ca3e9
 完全基于**Vibe Coding**完成。
 
 ## ✨ 核心功能
