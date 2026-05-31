@@ -30,6 +30,13 @@ class Entries extends Table {
   TextColumn get note => text().nullable()();
 }
 
+class EntryWithGame {
+  final Entry entry;
+  final Game game;
+
+  EntryWithGame(this.entry, this.game);
+}
+
 @DriftDatabase(tables: [Publishers, Games, Entries])
 class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
@@ -59,6 +66,21 @@ class AppDatabase extends _$AppDatabase {
   Future<int> addEntry(EntriesCompanion entry) => into(entries).insert(entry);
 
   Stream<List<Entry>> watchAllEntries() => select(entries).watch();
+
+  Stream<List<EntryWithGame>> watchAllEntriesWithGame() {
+    final query = select(entries).join([
+      innerJoin(games, games.id.equalsExp(entries.gameId)),
+    ]);
+
+    return query.watch().map((rows) {
+      return rows.map((row) {
+        return EntryWithGame(
+          row.readTable(entries),
+          row.readTable(games),
+        );
+      }).toList();
+    });
+  }
 }
 
 LazyDatabase _openConnection() {
