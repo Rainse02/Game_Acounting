@@ -20,7 +20,7 @@ class GameAccountingApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Game Accounting Pro',
+      title: '个人游戏账本 Pro',
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
         useMaterial3: true,
@@ -38,10 +38,19 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  int _selectedIndex = 0;
+  int _selectedIndex = 1; // Start with Dashboard
+
+  @override
+  void initState() {
+    super.initState();
+    // Seed initial data on startup
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<AppDatabase>().seedInitialData();
+    });
+  }
 
   static const List<Widget> _widgetOptions = <Widget>[
-    Center(child: Text('Entries List (Coming Soon)')),
+    Center(child: Text('明细列表 (即将推出)')),
     DashboardScreen(),
   ];
 
@@ -59,11 +68,11 @@ class _HomePageState extends State<HomePage> {
         items: const <BottomNavigationBarItem>[
           BottomNavigationBarItem(
             icon: Icon(Icons.list),
-            label: 'Entries',
+            label: '明细',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.dashboard),
-            label: 'Dashboard',
+            label: '看板',
           ),
         ],
         currentIndex: _selectedIndex,

@@ -1,0 +1,10 @@
+gradle.allprojects {
+    project.afterEvaluate {
+        if (project.hasProperty("android")) {
+            project.android {
+                compileSdkVersion 36
+                buildToolsVersion "36.0.0"
+            }
+        }
+    }
+}

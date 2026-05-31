@@ -81,6 +81,30 @@ class AppDatabase extends _$AppDatabase {
       }).toList();
     });
   }
+
+  // Data Seeding
+  Future<void> seedInitialData() async {
+    final existing = await (select(publishers)..limit(1)).get();
+    if (existing.isNotEmpty) return; // Already seeded
+
+    final mihoyo = await addPublisher(const PublishersCompanion(name: Value('米哈游 (miHoYo)')));
+    final tencent = await addPublisher(const PublishersCompanion(name: Value('腾讯游戏 (Tencent)')));
+    final netease = await addPublisher(const PublishersCompanion(name: Value('网易游戏 (NetEase)')));
+    final steam = await addPublisher(const PublishersCompanion(name: Value('Steam')));
+
+    // Mihoyo Games
+    await addGame(GamesCompanion.insert(publisherId: mihoyo, name: '原神', category: 'Service'));
+    await addGame(GamesCompanion.insert(publisherId: mihoyo, name: '崩坏：星穹铁道', category: 'Service'));
+    await addGame(GamesCompanion.insert(publisherId: mihoyo, name: '绝区零', category: 'Service'));
+
+    // Tencent Games
+    await addGame(GamesCompanion.insert(publisherId: tencent, name: '王者荣耀', category: 'Service'));
+    // NetEase
+    await addGame(GamesCompanion.insert(publisherId: netease, name: '蛋仔派对', category: 'Service'));
+
+    // Steam Example
+    await addGame(GamesCompanion.insert(publisherId: steam, name: '黑神话：悟空', category: 'Library'));
+  }
 }
 
 LazyDatabase _openConnection() {

@@ -20,7 +20,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Dashboard'),
+        title: const Text('消费看板'),
       ),
       body: StreamBuilder<List<EntryWithGame>>(
         stream: database.watchAllEntriesWithGame(),
@@ -30,12 +30,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
           }
 
           if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
+            return Center(child: Text('错误: ${snapshot.error}'));
           }
 
           final allEntries = snapshot.data ?? [];
           if (allEntries.isEmpty) {
-            return const Center(child: Text('No entries found. Start adding some!'));
+            return const Center(child: Text('暂无记录，快去记一笔吧！'));
           }
 
           final filteredEntries = _selectedCategory == 'All'
@@ -52,14 +52,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 _buildSummaryCards(filteredEntries),
                 const SizedBox(height: 32),
                 const Text(
-                  'Spending Distribution',
+                  '消费分布',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
                 _buildPieChart(filteredEntries),
                 const SizedBox(height: 32),
                 const Text(
-                  'Monthly Trends',
+                  '每月趋势',
                   style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 16),
@@ -77,9 +77,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
     return Center(
       child: SegmentedButton<String>(
         segments: const [
-          ButtonSegment(value: 'All', label: Text('All'), icon: Icon(Icons.all_inclusive)),
-          ButtonSegment(value: 'Library', label: Text('Library'), icon: Icon(Icons.collections_bookmark)),
-          ButtonSegment(value: 'Service', label: Text('Service'), icon: Icon(Icons.subscriptions)),
+          ButtonSegment(value: 'All', label: Text('全部'), icon: Icon(Icons.all_inclusive)),
+          ButtonSegment(value: 'Library', label: Text('买断'), icon: Icon(Icons.collections_bookmark)),
+          ButtonSegment(value: 'Service', label: Text('内购'), icon: Icon(Icons.subscriptions)),
         ],
         selected: {_selectedCategory},
         onSelectionChanged: (Set<String> newSelection) {
@@ -100,17 +100,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
       children: [
         Expanded(
           child: _buildSummaryCard(
-            'Total',
-            '\$${totalSpending.toStringAsFixed(2)}',
-            Icons.attach_money,
+            '总支出',
+            '¥${totalSpending.toStringAsFixed(2)}',
+            Icons.account_balance_wallet,
             Colors.green,
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: _buildSummaryCard(
-            'Average',
-            '\$${avgPerEntry.toStringAsFixed(2)}',
+            '平均每笔',
+            '¥${avgPerEntry.toStringAsFixed(2)}',
             Icons.analytics,
             Colors.blue,
           ),

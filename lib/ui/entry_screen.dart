@@ -63,8 +63,6 @@ class _EntryScreenState extends State<EntryScreen> {
     if (_selectedGame != null && _selectedGame!.name == _gameController.text) {
       gameId = _selectedGame!.id;
     } else {
-      // Create new game and potentially new publisher
-      // For simplicity, we'll try to find or create the publisher first
       final publisherName = _publisherController.text.trim();
       final publishers = await db.getAllPublishers();
       int? pubId;
@@ -92,7 +90,7 @@ class _EntryScreenState extends State<EntryScreen> {
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Entry saved successfully')),
+        const SnackBar(content: Text('保存成功')),
       );
       Navigator.of(context).pop();
     }
@@ -104,7 +102,7 @@ class _EntryScreenState extends State<EntryScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('New Entry'),
+        title: const Text('记一笔'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -113,7 +111,6 @@ class _EntryScreenState extends State<EntryScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Search-First Autocomplete for Games
               Autocomplete<Game>(
                 displayStringForOption: (Game option) => option.name,
                 optionsBuilder: (TextEditingValue textEditingValue) async {
@@ -136,7 +133,6 @@ class _EntryScreenState extends State<EntryScreen> {
                   }
                 },
                 fieldViewBuilder: (context, controller, focusNode, onFieldSubmitted) {
-                  // Link our controller with autocomplete controller
                   if (controller.text != _gameController.text && _gameController.text.isNotEmpty && controller.text.isEmpty) {
                     controller.text = _gameController.text;
                   }
@@ -145,32 +141,36 @@ class _EntryScreenState extends State<EntryScreen> {
                     controller: controller,
                     focusNode: focusNode,
                     decoration: const InputDecoration(
-                      labelText: 'Game Name',
-                      hintText: 'Search or enter new game',
+                      labelText: '游戏名称',
+                      hintText: '搜索或输入新游戏',
                       prefixIcon: Icon(Icons.search),
                     ),
                     onChanged: (value) {
                       _gameController.text = value;
-                      _selectedGame = null; // Reset selection if typing manually
+                      _selectedGame = null;
                     },
-                    validator: (value) => (value == null || value.isEmpty) ? 'Please enter game name' : null,
+                    validator: (value) => (value == null || value.isEmpty) ? '请输入游戏名称' : null,
                   );
                 },
               ),
               const SizedBox(height: 16),
               TextFormField(
                 controller: _publisherController,
-                decoration: const InputDecoration(labelText: 'Publisher'),
-                validator: (value) => (value == null || value.isEmpty) ? 'Please enter publisher' : null,
+                decoration: const InputDecoration(labelText: '厂商'),
+                validator: (value) => (value == null || value.isEmpty) ? '请输入厂商' : null,
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                initialValue: _categoryController.text.isEmpty ? null : _categoryController.text,
-                decoration: const InputDecoration(labelText: 'Category'),
-                items: ['Library', 'Service', 'Hardware'].map((String category) {
+                value: _categoryController.text.isEmpty ? null : _categoryController.text,
+                decoration: const InputDecoration(labelText: '类型'),
+                items: [
+                  {'val': 'Library', 'label': '买断'},
+                  {'val': 'Service', 'label': '内购'},
+                  {'val': 'Hardware', 'label': '硬件/外设'},
+                ].map((item) {
                   return DropdownMenuItem<String>(
-                    value: category,
-                    child: Text(category),
+                    value: item['val'] as String,
+                    child: Text(item['label'] as String),
                   );
                 }).toList(),
                 onChanged: (value) {
@@ -178,13 +178,13 @@ class _EntryScreenState extends State<EntryScreen> {
                     _categoryController.text = value ?? '';
                   });
                 },
-                validator: (value) => (value == null || value.isEmpty) ? 'Please select category' : null,
+                validator: (value) => (value == null || value.isEmpty) ? '请选择类型' : null,
               ),
               const Divider(height: 32),
               TextFormField(
                 controller: _itemNameController,
-                decoration: const InputDecoration(labelText: 'Item Name', hintText: 'e.g., Base Game, DLC, Battle Pass'),
-                validator: (value) => (value == null || value.isEmpty) ? 'Please enter item name' : null,
+                decoration: const InputDecoration(labelText: '项目名称', hintText: '例如：月卡、皮肤、大作本体'),
+                validator: (value) => (value == null || value.isEmpty) ? '请输入项目名称' : null,
               ),
               const SizedBox(height: 16),
               Row(
@@ -193,11 +193,11 @@ class _EntryScreenState extends State<EntryScreen> {
                     flex: 2,
                     child: TextFormField(
                       controller: _priceController,
-                      decoration: const InputDecoration(labelText: 'Price', prefixText: r'$'),
+                      decoration: const InputDecoration(labelText: '单价', prefixText: '¥'),
                       keyboardType: TextInputType.number,
                       validator: (value) {
-                        if (value == null || value.isEmpty) return 'Enter price';
-                        if (double.tryParse(value) == null) return 'Invalid number';
+                        if (value == null || value.isEmpty) return '输入金额';
+                        if (double.tryParse(value) == null) return '格式错误';
                         return null;
                       },
                     ),
@@ -206,11 +206,11 @@ class _EntryScreenState extends State<EntryScreen> {
                   Expanded(
                     child: TextFormField(
                       controller: _quantityController,
-                      decoration: const InputDecoration(labelText: 'Quantity'),
+                      decoration: const InputDecoration(labelText: '数量'),
                       keyboardType: TextInputType.number,
                       validator: (value) {
-                        if (value == null || value.isEmpty) return 'Enter quantity';
-                        if (int.tryParse(value) == null) return 'Invalid integer';
+                        if (value == null || value.isEmpty) return '输入数量';
+                        if (int.tryParse(value) == null) return '格式错误';
                         return null;
                       },
                     ),
@@ -221,7 +221,7 @@ class _EntryScreenState extends State<EntryScreen> {
               TextFormField(
                 controller: _dateController,
                 decoration: const InputDecoration(
-                  labelText: 'Date',
+                  labelText: '日期',
                   suffixIcon: Icon(Icons.calendar_today),
                 ),
                 readOnly: true,
@@ -230,7 +230,7 @@ class _EntryScreenState extends State<EntryScreen> {
               const SizedBox(height: 16),
               TextFormField(
                 controller: _noteController,
-                decoration: const InputDecoration(labelText: 'Note (Optional)'),
+                decoration: const InputDecoration(labelText: '备注 (选填)'),
                 maxLines: 3,
               ),
               const SizedBox(height: 32),
@@ -239,7 +239,7 @@ class _EntryScreenState extends State<EntryScreen> {
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16),
                 ),
-                child: const Text('Save Entry'),
+                child: const Text('保存记录'),
               ),
             ],
           ),
