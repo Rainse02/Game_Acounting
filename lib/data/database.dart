@@ -35,6 +35,30 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase() : super(_openConnection());
   @override
   int get schemaVersion => 1;
+
+  // Games
+  Future<List<Game>> searchGames(String query) {
+    return (select(games)..where((tbl) => tbl.name.contains(query))).get();
+  }
+
+  Future<List<Game>> getAllGames() => select(games).get();
+
+  Future<int> addGame(GamesCompanion game) => into(games).insert(game);
+
+  // Publishers
+  Future<Publisher?> getPublisherById(int id) {
+    return (select(publishers)..where((tbl) => tbl.id.equals(id))).getSingleOrNull();
+  }
+
+  Future<List<Publisher>> getAllPublishers() => select(publishers).get();
+
+  Future<int> addPublisher(PublishersCompanion publisher) =>
+      into(publishers).insert(publisher, mode: InsertMode.insertOrIgnore);
+
+  // Entries
+  Future<int> addEntry(EntriesCompanion entry) => into(entries).insert(entry);
+
+  Stream<List<Entry>> watchAllEntries() => select(entries).watch();
 }
 
 LazyDatabase _openConnection() {

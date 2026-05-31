@@ -1,7 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'data/database.dart';
+import 'ui/entry_screen.dart';
 
 void main() {
-  runApp(const GameAccountingApp());
+  runApp(
+    Provider<AppDatabase>(
+      create: (context) => AppDatabase(),
+      dispose: (context, db) => db.close(),
+      child: const GameAccountingApp(),
+    ),
+  );
 }
 
 class GameAccountingApp extends StatelessWidget {
@@ -32,6 +41,14 @@ class HomePage extends StatelessWidget {
       ),
       body: const Center(
         child: Text('Welcome to Game Accounting Pro'),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => const EntryScreen()),
+          );
+        },
+        child: const Icon(Icons.add),
       ),
     );
   }
