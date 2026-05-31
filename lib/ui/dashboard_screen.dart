@@ -202,7 +202,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 getTitlesWidget: (value, meta) {
                   if (value.toInt() >= 0 && value.toInt() < presentMonths.length) {
                     return Padding(
-                      padding: const EdgeInsets.top(8.0),
+                      padding: const EdgeInsets.only(top: 8.0),
                       child: Text(presentMonths[value.toInt()], style: const TextStyle(fontSize: 10)),
                     );
                   }

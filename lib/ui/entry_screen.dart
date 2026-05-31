@@ -75,7 +75,7 @@ class _EntryScreenState extends State<EntryScreen> {
       }
 
       gameId = await db.addGame(GamesCompanion.insert(
-        publisherId: pubId!,
+        publisherId: pubId,
         name: _gameController.text.trim(),
         category: _categoryController.text.trim(),
       ));
@@ -165,7 +165,7 @@ class _EntryScreenState extends State<EntryScreen> {
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
-                value: _categoryController.text.isEmpty ? null : _categoryController.text,
+                initialValue: _categoryController.text.isEmpty ? null : _categoryController.text,
                 decoration: const InputDecoration(labelText: 'Category'),
                 items: ['Library', 'Service', 'Hardware'].map((String category) {
                   return DropdownMenuItem<String>(
@@ -193,7 +193,7 @@ class _EntryScreenState extends State<EntryScreen> {
                     flex: 2,
                     child: TextFormField(
                       controller: _priceController,
-                      decoration: const InputDecoration(labelText: 'Price', prefixText: '$'),
+                      decoration: const InputDecoration(labelText: 'Price', prefixText: r'$'),
                       keyboardType: TextInputType.number,
                       validator: (value) {
                         if (value == null || value.isEmpty) return 'Enter price';
