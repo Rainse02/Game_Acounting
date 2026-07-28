@@ -205,7 +205,7 @@ class _EntryListScreenState extends State<EntryListScreen> {
     );
   }
 
-  /// Builds the list grouped by month, with a subtotal per month.
+  /// Builds the list grouped by month, with a stats card header and subtotals per month.
   Widget _buildGroupedList(List<EntryDetail> details) {
     // details are already sorted newest first by the query.
     final items = <_ListItem>[];
@@ -226,14 +226,139 @@ class _EntryListScreenState extends State<EntryListScreen> {
 
     return ListView.builder(
       padding: const EdgeInsets.only(bottom: 88),
-      itemCount: items.length,
+      itemCount: items.length + 1,
       itemBuilder: (context, index) {
-        final item = items[index];
+        if (index == 0) {
+          return _buildFilterStatsCard(details);
+        }
+        final item = items[index - 1];
         if (item.isHeader) {
           return _buildMonthHeader(item);
         }
         return _buildEntryTile(item.detail!);
       },
+    );
+  }
+
+  Widget _buildFilterStatsCard(List<EntryDetail> filtered) {
+    final totalAmount = filtered.fold(0.0, (sum, e) => sum + e.total);
+
+    final libraryTotal = filtered
+        .where((e) => e.game.category == Categories.library)
+        .fold(0.0, (sum, e) => sum + e.total);
+    final serviceTotal = filtered
+        .where((e) => e.game.category == Categories.service)
+        .fold(0.0, (sum, e) => sum + e.total);
+    final hardwareTotal = filtered
+        .where((e) => e.game.category == Categories.hardware)
+        .fold(0.0, (sum, e) => sum + e.total);
+
+    final isZh = Localizations.localeOf(context).languageCode == 'zh';
+
+    return Card(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+      elevation: 1,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _hasActiveFilters
+                      ? (isZh
+                          ? '筛选统计 (${filtered.length} 笔)'
+                          : 'Filtered Stats (${filtered.length})')
+                      : (isZh
+                          ? '全部统计 (${filtered.length} 笔)'
+                          : 'Total Stats (${filtered.length})'),
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+                Text(
+                  money(totalAmount),
+                  style: const TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.redAccent,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                _buildStatPill(
+                  label: categoryLabel(context, Categories.library),
+                  amount: libraryTotal,
+                  color: categoryColor(Categories.library),
+                ),
+                const SizedBox(width: 8),
+                _buildStatPill(
+                  label: categoryLabel(context, Categories.service),
+                  amount: serviceTotal,
+                  color: categoryColor(Categories.service),
+                ),
+                const SizedBox(width: 8),
+                _buildStatPill(
+                  label: categoryLabel(context, Categories.hardware),
+                  amount: hardwareTotal,
+                  color: categoryColor(Categories.hardware),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatPill({
+    required String label,
+    required double amount,
+    required Color color,
+  }) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.08),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withValues(alpha: 0.25)),
+        ),
+        child: Column(
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 11,
+                color: color,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+            const SizedBox(height: 2),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                money(amount),
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: color.withValues(alpha: 0.9),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

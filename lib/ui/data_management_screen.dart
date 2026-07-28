@@ -143,14 +143,18 @@ class DataManagementScreen extends StatelessWidget {
     if (!context.mounted) return;
 
     final finalPath = savedPath;
-    ScaffoldMessenger.of(context).hideCurrentSnackBar();
-    ScaffoldMessenger.of(context).showSnackBar(
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(
       SnackBar(
         content: Text(l10n.exportSavedTo(finalPath)),
-        duration: const Duration(seconds: 6),
+        duration: const Duration(seconds: 4),
+        behavior: SnackBarBehavior.floating,
+        dismissDirection: DismissDirection.horizontal,
         action: SnackBarAction(
           label: '分享',
           onPressed: () {
+            messenger.hideCurrentSnackBar();
             // ignore: deprecated_member_use
             Share.shareXFiles([XFile(finalPath)]);
           },
