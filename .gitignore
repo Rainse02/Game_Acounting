@@ -11,6 +11,8 @@
 .svn/
 .swiftpm/
 migrate_working_dir/
+docs/game_ledger_v2_upgrade*
+docs/superpowers/
 
 # IntelliJ related
 *.iml
