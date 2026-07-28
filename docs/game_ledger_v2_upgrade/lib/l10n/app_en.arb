@@ -1,0 +1,164 @@
+{
+  "@@locale": "en",
+
+  "appTitle": "Game Ledger",
+  "navDashboard": "Dashboard",
+  "navEntries": "History",
+  "navData": "Data",
+
+  "categoryLibrary": "Buy-to-play",
+  "categoryService": "In-app / online",
+  "categoryHardware": "Peripherals",
+  "filterAll": "All",
+
+  "dashboardTitle": "Dashboard",
+  "totalSpending": "Total spent",
+  "thisMonthSpending": "This month",
+  "avgPerEntry": "Avg per entry",
+  "spendingByCategory": "By category",
+  "monthlyTrend": "Monthly trend",
+  "yearlyTrend": "Yearly totals",
+  "chartTapHintPie": "Tip: tap a slice to see details",
+  "chartTapHintBar": "Tip: tap a bar to see details",
+  "emptyDashboard": "No records yet — add your first one!",
+  "noCategoryData": "No data for this selection",
+  "yearAll": "All years",
+
+  "monthlyBudget": "Monthly budget",
+  "setBudget": "Set monthly budget",
+  "budgetInputHint": "Amount, e.g. 300",
+  "clearBudget": "Clear budget",
+  "noBudgetHint": "Tap to set a monthly budget",
+  "budgetRemaining": "{amount} left this month",
+  "@budgetRemaining": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+  "overBudget": "Over budget by {amount}",
+  "@overBudget": {
+    "placeholders": {
+      "amount": {"type": "String"}
+    }
+  },
+
+  "save": "Save",
+  "cancel": "Cancel",
+  "delete": "Delete",
+  "undo": "Undo",
+
+  "entriesTitle": "History",
+  "searchHint": "Search game, item or publisher",
+  "emptyEntries": "No entries yet",
+  "noMatch": "No entries match the current filters",
+  "clearFilters": "Reset filters",
+  "dateRange": "Date range",
+  "entryDeleted": "Entry deleted",
+  "entriesCount": "{count} entries",
+  "@entriesCount": {
+    "placeholders": {
+      "count": {"type": "String"}
+    }
+  },
+
+  "newEntryTitle": "Add entry",
+  "editEntryTitle": "Edit entry",
+  "gameName": "Game",
+  "gameSearchHint": "Search or enter a new game",
+  "publisher": "Publisher",
+  "category": "Category",
+  "itemName": "Item",
+  "itemHint": "e.g. monthly pass, skin, full game",
+  "unitPrice": "Unit price",
+  "quantity": "Qty",
+  "date": "Date",
+  "noteOptional": "Note (optional)",
+  "saved": "Saved",
+  "fieldRequired": "Required",
+  "invalidNumber": "Invalid number",
+  "confirmDeleteTitle": "Delete entry",
+  "confirmDeleteBody": "Delete this entry? This cannot be undone.",
+
+  "dataTitle": "Data",
+  "sectionBackup": "Backup & export",
+  "exportCsvTitle": "Export CSV",
+  "exportCsvSubtitle": "Spreadsheet-friendly table of all entries",
+  "exportJsonTitle": "Export full backup (JSON)",
+  "exportJsonSubtitle": "Lossless backup incl. publishers, games and settings",
+  "sectionRestore": "Restore & import",
+  "importCsvTitle": "Import from CSV",
+  "importCsvSubtitle": "Merge a CSV file, with preview and duplicate check",
+  "restoreJsonTitle": "Restore full backup",
+  "restoreJsonSubtitle": "Replaces ALL current data with a JSON backup",
+  "sectionDanger": "Danger zone",
+  "clearAllTitle": "Erase all data",
+  "clearAllSubtitle": "This cannot be undone — export a backup first",
+  "confirmClearTitle": "Erase everything?",
+  "confirmClearBody": "All local records will be permanently deleted. Consider exporting a backup first.",
+  "confirmClearAction": "Erase",
+  "clearedMessage": "All data erased",
+  "exportFailed": "Export failed: {error}",
+  "@exportFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "importFailed": "Import failed: {error}",
+  "@importFailed": {
+    "placeholders": {
+      "error": {"type": "String"}
+    }
+  },
+  "restoreConfirmTitle": "Restore this backup?",
+  "restoreConfirmBody": "This will REPLACE all current data with the backup file. Continue?",
+  "restoreDone": "Restored {count} entries",
+  "@restoreDone": {
+    "placeholders": {
+      "count": {"type": "String"}
+    }
+  },
+  "exportSavedTo": "Exported to {path}",
+  "@exportSavedTo": {
+    "placeholders": {
+      "path": {"type": "String"}
+    }
+  },
+
+  "importPreviewTitle": "Import preview",
+  "detectedFormatHeadered": "Detected format: ledger CSV",
+  "detectedFormatLegacy": "Detected format: legacy export",
+  "readyRows": "{count} rows ready to import",
+  "@readyRows": {
+    "placeholders": {
+      "count": {"type": "String"}
+    }
+  },
+  "issueRows": "{count} rows skipped (details below)",
+  "@issueRows": {
+    "placeholders": {
+      "count": {"type": "String"}
+    }
+  },
+  "duplicateRows": "{count} possible duplicates",
+  "@duplicateRows": {
+    "placeholders": {
+      "count": {"type": "String"}
+    }
+  },
+  "skipDuplicates": "Skip duplicates",
+  "importAction": "Import",
+  "importedMessage": "Imported {count} entries",
+  "@importedMessage": {
+    "placeholders": {
+      "count": {"type": "String"}
+    }
+  },
+  "duplicateTag": "duplicate",
+  "issuesTitle": "Skipped rows",
+  "rowLabel": "Row {number}",
+  "@rowLabel": {
+    "placeholders": {
+      "number": {"type": "String"}
+    }
+  }
+}

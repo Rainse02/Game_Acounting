@@ -1,0 +1,89 @@
+name: Release
+
+# Builds small per-ABI APKs and a Play Store bundle whenever a version tag
+# (v2.0.0, v2.1.0, ...) is pushed, and attaches them to a GitHub Release.
+#
+# Optional release signing: add these repository secrets to sign with your
+# own key (otherwise the debug key is used):
+#   KEYSTORE_BASE64   - base64 of your upload-keystore.jks
+#   KEYSTORE_PASSWORD - store password
+#   KEY_ALIAS         - key alias
+#   KEY_PASSWORD      - key password
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    runs-on: ubuntu-latest
+    env:
+      KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install SQLite for tests
+        run: sudo apt-get update && sudo apt-get install -y libsqlite3-dev
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Generate drift database code
+        run: dart run build_runner build --delete-conflicting-outputs
+
+      - name: Generate localizations
+        run: flutter gen-l10n
+
+      - name: Analyze
+        run: flutter analyze
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Set up release keystore (optional)
+        if: ${{ env.KEYSTORE_BASE64 != '' }}
+        run: |
+          echo "$KEYSTORE_BASE64" | base64 -d > android/upload-keystore.jks
+          cat > android/key.properties <<EOF
+          storeFile=upload-keystore.jks
+          storePassword=${{ secrets.KEYSTORE_PASSWORD }}
+          keyAlias=${{ secrets.KEY_ALIAS }}
+          keyPassword=${{ secrets.KEY_PASSWORD }}
+          EOF
+
+      # One small APK per CPU architecture instead of one fat universal APK.
+      # This is the main size win: ~8-9 MB per APK vs ~25 MB universal.
+      - name: Build per-ABI APKs
+        run: |
+          flutter build apk --release --split-per-abi \
+            --split-debug-info=build/symbols
+
+      - name: Build app bundle (for Play Store)
+        run: |
+          flutter build appbundle --release \
+            --split-debug-info=build/symbols
+
+      - name: Upload APK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-apks
+          path: |
+            build/app/outputs/flutter-apk/app-*-release.apk
+            build/app/outputs/bundle/release/app-release.aab
+
+      - name: Attach to GitHub Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build/app/outputs/flutter-apk/app-arm64-v8a-release.apk
+            build/app/outputs/flutter-apk/app-armeabi-v7a-release.apk
+            build/app/outputs/flutter-apk/app-x86_64-release.apk
+          generate_release_notes: true

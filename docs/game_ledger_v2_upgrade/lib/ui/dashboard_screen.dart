@@ -41,7 +41,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             return Center(child: Text(l10n.emptyDashboard));
           }
 
-          final List<int> years = allEntries
+          final years = allEntries
               .map((e) => e.entry.date.year)
               .toSet()
               .toList()

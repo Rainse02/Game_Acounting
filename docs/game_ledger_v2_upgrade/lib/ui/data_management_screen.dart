@@ -117,7 +117,6 @@ class DataManagementScreen extends StatelessWidget {
       final directory = await getTemporaryDirectory();
       final file = File('${directory.path}/$fileName');
       await file.writeAsString(content, encoding: utf8);
-      // ignore: deprecated_member_use
       await Share.shareXFiles([XFile(file.path)]);
     } else {
       final path = await FilePicker.platform.saveFile(
