@@ -108,29 +108,55 @@ class DataManagementScreen extends StatelessWidget {
   static String _timestamp() =>
       DateFormat('yyyyMMdd_HHmmss').format(DateTime.now());
 
-  /// Shares the file on mobile; opens a "save as" dialog on desktop.
+  /// Saves the file locally (to user-selected path or public Download directory),
+  /// and shows a SnackBar with local path and optional "Share" action.
   static Future<void> _deliverFile(
       BuildContext context, String content, String fileName) async {
     final l10n = context.l10n;
+    String? savedPath;
 
-    if (Platform.isAndroid || Platform.isIOS) {
-      final directory = await getTemporaryDirectory();
-      final file = File('${directory.path}/$fileName');
-      await file.writeAsString(content, encoding: utf8);
-      // ignore: deprecated_member_use
-      await Share.shareXFiles([XFile(file.path)]);
-    } else {
-      final path = await FilePicker.platform.saveFile(
+    try {
+      savedPath = await FilePicker.platform.saveFile(
         fileName: fileName,
+        bytes: utf8.encode(content),
       );
-      if (path == null) return; // user cancelled
-      final file = File(path);
-      await file.writeAsString(content, encoding: utf8);
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(l10n.exportSavedTo(path))));
-      }
+    } catch (_) {
+      // Fallback if FilePicker saveFile is unsupported on specific platform version
     }
+
+    if (savedPath == null) {
+      Directory? targetDir;
+      if (Platform.isAndroid) {
+        final downloadDir = Directory('/storage/emulated/0/Download');
+        if (await downloadDir.exists()) {
+          targetDir = downloadDir;
+        }
+      }
+      targetDir ??= await getDownloadsDirectory();
+      targetDir ??= await getApplicationDocumentsDirectory();
+
+      final file = File('${targetDir.path}/$fileName');
+      await file.writeAsString(content, encoding: utf8);
+      savedPath = file.path;
+    }
+
+    if (!context.mounted) return;
+
+    final finalPath = savedPath;
+    ScaffoldMessenger.of(context).hideCurrentSnackBar();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(l10n.exportSavedTo(finalPath)),
+        duration: const Duration(seconds: 6),
+        action: SnackBarAction(
+          label: '分享',
+          onPressed: () {
+            // ignore: deprecated_member_use
+            Share.shareXFiles([XFile(finalPath)]);
+          },
+        ),
+      ),
+    );
   }
 
   Future<void> _exportCsv(BuildContext context, AppDatabase db) async {
