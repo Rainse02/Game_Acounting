@@ -1,4 +1,4 @@
-# 游戏账本 (Game Ledger)
+# GameA (游戏账本)
 
 一个简洁的跨平台（Android & Windows）游戏消费记账应用。
 A simple cross-platform (Android & Windows) game spending tracker.
