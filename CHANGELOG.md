@@ -1,12 +1,12 @@
 # Changelog
 
-## 2.0.0
+## 1.1.0
 
 ### Fixed
 - **CSV round-trip corruption**: the v1 exporter and importer used different
   column layouts, so re-importing an exported file silently replaced every
   date with "today" and dropped all categories. Import is now header-driven
-  and understands all three historical layouts (v2 canonical, v1 in-app
+  and understands all three historical layouts (canonical, v1 in-app
   export, legacy Python export).
 - **Cross-year chart merging**: the monthly trend chart grouped by month name
   only, adding e.g. January 2025 and January 2026 together. Statistics are
@@ -37,8 +37,8 @@
 ### Changed
 - Database schema v2 (adds a key-value `settings` table; existing data is
   migrated automatically on first launch).
-- App label is now "游戏账本 / Game Ledger" (localized) instead of "GameA".
-  The application ID is **unchanged**, so v2 installs directly over v1
+- App name is **GameA**.
+  The application ID is **unchanged**, so v1.1.0 installs directly over v1.0
   without any data loss.
 - Trimmed ProGuard keep-alls (`-keep class io.flutter.** { *; }`, unused
   Firebase/sqlcipher rules) that were defeating R8 shrinking.

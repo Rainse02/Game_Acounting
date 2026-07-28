@@ -1,137 +1,108 @@
-# GameA (游戏账本)
+# 🎮 GameA (游戏账本) v1.1.0
 
-一个简洁的跨平台（Android & Windows）游戏消费记账应用。
-A simple cross-platform (Android & Windows) game spending tracker.
+一个简洁、优雅且功能强大的跨平台（Android & Windows）游戏消费记账与数据分析应用。  
+*A sleek, intuitive, and cross-platform game spending tracker and financial analytics app.*
 
-[中文](#中文) | [English](#english)
+[中文功能指南](#-中文指南) | [English Guide](#-english-guide)
 
 ---
 
-## 中文
+## 🇨🇳 中文指南
 
-### 功能
+### ✨ 核心亮点
 
-- **智能记账** — 游戏/厂商搜索联想，自动带出分类；支持随时**编辑**已有记录（v2 新增）
-- **明细管理** — 按月分组显示小计，支持关键词搜索、分类筛选、日期范围筛选，左滑删除可撤销（v2 新增）
-- **消费看板** — 分类占比环形图、月度/年度趋势柱状图（跨年数据不再混算，v2 修复），点击图表下钻明细
-- **月度预算** — 设置每月预算，看板实时显示进度与超支提醒（v2 新增）
-- **数据管理**
-  - CSV 导出/导入：**导入前预览**、自动识别新旧三种格式、重复记录检测（v2 重做）
-  - JSON 完整备份/恢复：无损保留厂商、游戏、记录与设置的完整关系（v2 新增）
-- **中英双语** — 跟随系统语言自动切换（v2 新增）
+- 🎮 **智能记账**
+  - **联想补全**：内置常用厂商与游戏下拉搜索，自动带出分类（买断 / 内购 / 硬件）。
+  - **灵活编辑**：支持随时对已记录的消费进行二次修改，记录准确无误。
 
-### 开始开发
+- 📊 **多维看板与图表**
+  - **消费分布**：直观的分类环形占比图，点击扇区可直接下钻查看明细。
+  - **趋势分析**：月度与年度消费柱状图，支持年份自由切换与全历史总览。
 
-环境要求：Flutter SDK（stable 渠道）、Dart 3.x。
+- 💰 **月度预算管理**
+  - 自定义设置每月消费预算，看板实时展示已用额度、剩余金额与进度条，超出时提供清晰预警。
 
-```bash
-git clone https://github.com/Rainse02/Game_Acounting.git
-cd Game_Acounting
+- 🔍 **明细管理与搜索**
+  - **分组小计**：按月份分组展示总支出与笔数。
+  - **精准筛选**：支持关键字（游戏 / 项目 / 厂商）实时搜索、分类 Chip 快速过滤及自定义日期范围筛选。
+  - **防误删保护**：列表左滑快速删除，提供底部撤销 (Undo) 按钮。
 
-# 一键初始化：拉取依赖 + 生成 drift 数据库代码 + 生成本地化代码
-./tool/bootstrap.sh        # Windows: tool\bootstrap.bat
+- 🛡️ **数据安全与无损备份**
+  - **JSON 完整无损备份**：一键导出包含账目、厂商、游戏与预算设置的全量备份，换机无忧。
+  - **智能 CSV 导出/导入**：导出表格带 UTF-8 BOM（Excel 打开无乱码）；导入带**预览与去重**功能，兼容各类历史数据。
 
-flutter run
-```
+- 🌐 **中英双语**
+  - 原生支持中文与英文界面，跟随手机 / 电脑系统语言自动切换。
 
-> **注意**：`lib/data/database.g.dart` 与 `lib/l10n/app_localizations*.dart`
-> 均为生成代码。修改 `database.dart` 表结构或 `.arb` 文案后需重新运行
-> bootstrap（或 `dart run build_runner build` / `flutter gen-l10n`）。
+---
 
-### 构建发布版
+### 📲 下载与使用
 
-```bash
-# 按 CPU 架构拆分构建，单个 APK 体积可比通用包小 60% 以上
-flutter build apk --release --split-per-abi
+- **Android 手机用户**：
+  下载最新 release 版本 `app-arm64-v8a-release.apk`，在手机上安装即可直接使用。支持覆盖升级安装，历史账目数据绝对不会丢失。
+- **Windows 桌面用户**：
+  直接运行桌面客户端，享受大屏看板与便捷的快捷键体验。
 
-# 上架 Google Play 用 App Bundle（商店按设备自动下发对应架构）
-flutter build appbundle --release
-```
+---
 
-推送 `v*` 标签（如 `v2.0.0`）后，GitHub Actions 会自动完成
-分析 → 测试 → 构建拆分 APK → 挂到 GitHub Release。
+### 📄 CSV 导入与导出格式规范
 
-**正式签名**：复制 `android/key.properties.example` 为
-`android/key.properties` 并填入自己的密钥库信息（勿提交到 git）。
-未配置时回退为 debug 签名，便于本地验证。
+导出文件采用标准 UTF-8 BOM 编码，推荐格式如下：
 
-### CSV 格式
-
-导出表头（同时也是推荐的导入格式）：
-
-```
+```csv
 日期,分类,厂商,游戏,项目,单价,数量,总额,备注
-2025-03-01,Service,米哈游 (miHoYo),原神,月卡,30.0,1,30.0,
+2026-03-01,Service,米哈游 (miHoYo),原神,月卡,30.0,1,30.0,
+2026-03-05,Library,Steam,黑神话：悟空,游戏本体,268.0,1,268.0,标准版
 ```
 
-- `分类` 取值：`Library`（买断）/ `Service`（内购）/ `Hardware`（相关），
-  中文写法（买断/内购/相关）亦可识别
-- 导入按**表头名称**匹配列，因此旧版应用导出的 CSV 及
-  legacy Python 版导出（`用户,日期,...`）都能正确导入，日期与分类不会丢失
-- 文件带 UTF-8 BOM，Excel 直接打开不乱码
-
-### 项目结构
-
-```
-lib/
-├── main.dart                 # 入口 + 多语言配置
-├── l10n/                     # 中英文案 (.arb)
-├── data/
-│   ├── database.dart         # drift 表定义 + 查询（schema v2）
-│   ├── csv_service.dart      # CSV 导出/解析/查重/导入
-│   └── backup_service.dart   # JSON 完整备份/恢复
-└── ui/
-    ├── home_page.dart        # 底部导航
-    ├── dashboard_screen.dart # 看板：预算、图表、年份切换
-    ├── entry_list_screen.dart# 明细：搜索/筛选/编辑入口
-    ├── entry_edit_screen.dart# 新增/编辑记录
-    ├── data_management_screen.dart
-    └── import_preview_screen.dart # 导入预览与查重
-```
+- **分类取值说明**：
+  - `Library`（买断制游戏 / 本体）
+  - `Service`（内购 / 抽卡 / 订阅月卡）
+  - `Hardware`（游戏外设 / 硬件设备）
+- **兼容性**：导入器按表头名称智能匹配，完美兼容旧版 App 及 Python 导出表格。
 
 ---
 
-## English
+## 🇬🇧 English Guide
 
-### Features
+### ✨ Key Features
 
-- **Quick entry** with game/publisher autocomplete and auto-categorization; entries are fully **editable** (new in v2)
-- **History** grouped by month with subtotals, keyword search, category and date-range filters, swipe-to-delete with undo (new in v2)
-- **Dashboard** with category donut, monthly/yearly trend bars (years are no longer merged — fixed in v2) and tap-to-drill-down
-- **Monthly budget** with live progress and overspend warning (new in v2)
-- **Data management**
-  - CSV export/import with **import preview**, automatic format detection (three historical layouts) and duplicate detection (rebuilt in v2)
-  - Lossless JSON full backup/restore incl. publishers, games and settings (new in v2)
-- **English & Chinese UI**, following the system language (new in v2)
+- 🎮 **Smart Logging**
+  - **Autocomplete**: Search publishers & games with automatic category detection (Buy-to-play / In-app / Peripherals).
+  - **Full Editability**: Edit any existing transaction at any time.
 
-### Getting started
+- 📊 **Interactive Dashboard**
+  - **Category Donut**: Visualize spending distribution by category; tap to view detailed entries.
+  - **Trend Analysis**: Monthly and yearly bar charts with full multi-year filtering.
 
-Requires the Flutter SDK (stable channel), Dart 3.x.
+- 💰 **Monthly Budget Control**
+  - Set a target monthly budget with live progress bars, remaining balance indicators, and overspend warnings.
 
-```bash
-git clone https://github.com/Rainse02/Game_Acounting.git
-cd Game_Acounting
-./tool/bootstrap.sh        # Windows: tool\bootstrap.bat
-flutter run
+- 🔍 **History & Filtering**
+  - **Monthly Subtotals**: Entries grouped by month with item count and cost totals.
+  - **Search & Filters**: Search by keyword, filter by category chip, or set custom date ranges.
+  - **Swipe-to-Delete**: Quick swipe deletion with instantaneous SnackBar Undo.
+
+- 🛡️ **Data Security & Lossless Backup**
+  - **JSON Full Backup**: Lossless full export/restore including games, publishers, and budget settings.
+  - **Smart CSV Import/Export**: Excel-friendly UTF-8 BOM exports; import preview with automatic duplicate detection.
+
+- 🌐 **Multilingual Support**
+  - Seamless English and Chinese UI, following your system language preference.
+
+---
+
+### 📄 Standard CSV Specification
+
+```csv
+Date,Category,Publisher,Game,Item,UnitPrice,Quantity,Total,Note
+2026-03-01,Service,miHoYo,Genshin Impact,Monthly Pass,30.0,1,30.0,
 ```
 
-`lib/data/database.g.dart` and `lib/l10n/app_localizations*.dart` are
-generated code — rerun the bootstrap script after changing the schema or the
-`.arb` files.
+- **Categories**: `Library` (Buy-to-play), `Service` (In-app / Subscriptions), `Hardware` (Peripherals & Gear).
 
-### Release builds
+---
 
-```bash
-flutter build apk --release --split-per-abi   # small per-ABI APKs
-flutter build appbundle --release             # for Google Play
-```
+### 📜 License
 
-Pushing a `v*` tag triggers the GitHub Actions release workflow
-(analyze → test → build → attach APKs to the GitHub Release).
-
-For proper release signing, copy `android/key.properties.example` to
-`android/key.properties` and fill in your keystore details (never commit it).
-
-### License
-
-MIT — see [LICENSE](LICENSE).
+Distributed under the [MIT License](LICENSE).
