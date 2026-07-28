@@ -106,14 +106,26 @@ class AppDatabase extends _$AppDatabase {
 
   Future<int> addGame(GamesCompanion game) => into(games).insert(game);
 
-  /// Finds a game by publisher + name, creating it (and updating an empty
-  /// category) when missing.
+  Future<int> updateGame(int id, GamesCompanion game) {
+    return (update(games)..where((t) => t.id.equals(id))).write(game);
+  }
+
+  /// Finds a game by publisher + name, creating it when missing
+  /// or updating its category when modified.
   Future<Game> getOrCreateGame(
       int publisherId, String name, String category) async {
     final existing = await (select(games)
           ..where((t) => t.publisherId.equals(publisherId) & t.name.equals(name)))
         .getSingleOrNull();
-    if (existing != null) return existing;
+    if (existing != null) {
+      if (category.isNotEmpty && existing.category != category) {
+        await updateGame(
+            existing.id, GamesCompanion(category: Value(category)));
+        return (select(games)..where((t) => t.id.equals(existing.id)))
+            .getSingle();
+      }
+      return existing;
+    }
 
     final id = await into(games).insert(GamesCompanion.insert(
       publisherId: publisherId,

@@ -28,7 +28,6 @@ class _EntryEditScreenState extends State<EntryEditScreen> {
   final _noteController = TextEditingController();
 
   String? _category;
-  Game? _selectedGame;
   DateTime _selectedDate = DateTime.now();
 
   bool get _isEditing => widget.existing != null;
@@ -48,7 +47,6 @@ class _EntryEditScreenState extends State<EntryEditScreen> {
       _quantityController.text = entry.quantity.toString();
       _selectedDate = entry.date;
       _noteController.text = entry.note ?? '';
-      _selectedGame = existing.game;
     }
     _dateController.text = DateFormat('yyyy-MM-dd').format(_selectedDate);
   }
@@ -80,13 +78,8 @@ class _EntryEditScreenState extends State<EntryEditScreen> {
     }
   }
 
-  /// Resolves the game id for the current form values, creating the
-  /// publisher/game when needed.
   Future<int> _resolveGameId(AppDatabase db) async {
     final gameName = _gameController.text.trim();
-    if (_selectedGame != null && _selectedGame!.name == gameName) {
-      return _selectedGame!.id;
-    }
     final publisher =
         await db.getOrCreatePublisher(_publisherController.text.trim());
     final game =
@@ -188,7 +181,6 @@ class _EntryEditScreenState extends State<EntryEditScreen> {
                 },
                 onSelected: (Game selection) async {
                   setState(() {
-                    _selectedGame = selection;
                     _gameController.text = selection.name;
                     _category = selection.category;
                   });
@@ -211,7 +203,6 @@ class _EntryEditScreenState extends State<EntryEditScreen> {
                     ),
                     onChanged: (value) {
                       _gameController.text = value;
-                      _selectedGame = null;
                     },
                     validator: (value) => (value == null || value.isEmpty)
                         ? l10n.fieldRequired

@@ -1,0 +1,36 @@
+name: game_accounting_pro
+description: A cross-platform (Android & Windows) game spending tracker.
+publish_to: 'none'
+version: 2.0.0+2
+
+environment:
+  sdk: '>=3.4.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_localizations:
+    sdk: flutter
+  drift: ^2.16.0
+  sqlite3_flutter_libs: ^0.5.20
+  path_provider: ^2.1.2
+  path: ^1.9.0
+  provider: ^6.1.2
+  file_picker: ^8.0.0
+  # Pinned by flutter_localizations; "any" lets pub pick the matching version.
+  intl: any
+  fl_chart: ^0.66.0
+  csv: ^6.0.0
+  cupertino_icons: ^1.0.6
+  share_plus: ^12.0.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  drift_dev: ^2.16.0
+  build_runner: ^2.4.8
+
+flutter:
+  uses-material-design: true
+  generate: true
