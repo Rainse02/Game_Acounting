@@ -37,6 +37,8 @@ class Games extends Table {
 class Entries extends Table {
   IntColumn get id => integer().autoIncrement()();
   IntColumn get gameId => integer().references(Games, #id)();
+  TextColumn get category =>
+      text().withDefault(const Constant(Categories.service))();
   DateTimeColumn get date => dateTime()();
   TextColumn get itemName => text()();
   RealColumn get price => real()();
@@ -62,7 +64,36 @@ class EntryDetail {
   EntryDetail(this.entry, this.game, this.publisher);
 
   double get total => entry.price * entry.quantity;
+  String get category => entry.category;
 }
+
+/// A unique game/publisher pair shown by autocomplete fields.
+class GameSuggestion {
+  final Game game;
+  final Publisher publisher;
+
+  const GameSuggestion(this.game, this.publisher);
+}
+
+class CatalogMergeResult {
+  final int publishersMerged;
+  final int gamesMerged;
+
+  const CatalogMergeResult({
+    required this.publishersMerged,
+    required this.gamesMerged,
+  });
+}
+
+/// Removes invisible/duplicate spacing while retaining the user's casing.
+String cleanCatalogName(String value) => value
+    .replaceAll(RegExp(r'[\u200B-\u200D\uFEFF]'), '')
+    .replaceAll('\u3000', ' ')
+    .trim()
+    .replaceAll(RegExp(r'\s+'), ' ');
+
+/// Comparison key used for publisher names and publisher/game pairs.
+String catalogNameKey(String value) => cleanCatalogName(value).toLowerCase();
 
 /// Kept for backwards compatibility with the old UI layer.
 class EntryWithGame {
@@ -80,27 +111,81 @@ class AppDatabase extends _$AppDatabase {
   AppDatabase.forTesting(super.executor);
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
         onCreate: (m) async {
           await m.createAll();
+          await _createCatalogIndexes();
         },
         onUpgrade: (m, from, to) async {
           if (from < 2) {
             await m.createTable(settings);
           }
+          if (from < 3) {
+            await m.addColumn(entries, entries.category);
+            await customStatement('''
+              UPDATE entries
+              SET category = COALESCE(
+                (SELECT games.category
+                 FROM games
+                 WHERE games.id = entries.game_id),
+                '${Categories.service}'
+              )
+            ''');
+            await _mergeDuplicateCatalog();
+            await _createCatalogIndexes();
+          }
+        },
+        beforeOpen: (_) async {
+          await customStatement('PRAGMA foreign_keys = ON');
+          await _createCatalogIndexes();
         },
       );
+
+  Future<void> _createCatalogIndexes() async {
+    await customStatement('''
+      CREATE UNIQUE INDEX IF NOT EXISTS publishers_normalized_name_unique
+      ON publishers(name COLLATE NOCASE)
+    ''');
+    await customStatement('''
+      CREATE UNIQUE INDEX IF NOT EXISTS games_publisher_name_unique
+      ON games(publisher_id, name COLLATE NOCASE)
+    ''');
+  }
 
   // ---------------------------------------------------------------------------
   // Games
   // ---------------------------------------------------------------------------
 
-  Future<List<Game>> searchGames(String query) {
-    return (select(games)..where((tbl) => tbl.name.contains(query))).get();
+  Future<List<GameSuggestion>> searchGameSuggestions(String query) async {
+    final queryKey = catalogNameKey(query);
+    final joined = select(games).join([
+      innerJoin(publishers, publishers.id.equalsExp(games.publisherId)),
+    ]);
+    final rows = await joined.get();
+    final suggestions = rows
+        .map((row) => GameSuggestion(
+              row.readTable(games),
+              row.readTable(publishers),
+            ))
+        .where((suggestion) =>
+            catalogNameKey(suggestion.game.name).contains(queryKey) ||
+            catalogNameKey(suggestion.publisher.name).contains(queryKey))
+        .toList();
+    suggestions.sort((a, b) {
+      final byGame =
+          catalogNameKey(a.game.name).compareTo(catalogNameKey(b.game.name));
+      if (byGame != 0) return byGame;
+      return catalogNameKey(a.publisher.name)
+          .compareTo(catalogNameKey(b.publisher.name));
+    });
+    return suggestions;
   }
+
+  Future<List<Game>> searchGames(String query) async =>
+      (await searchGameSuggestions(query)).map((item) => item.game).toList();
 
   Future<List<Game>> getAllGames() => select(games).get();
 
@@ -110,27 +195,32 @@ class AppDatabase extends _$AppDatabase {
     return (update(games)..where((t) => t.id.equals(id))).write(game);
   }
 
-  /// Finds a game by publisher + name, creating it when missing
-  /// or updating its category when modified.
+  /// Finds the canonical publisher/game pair, creating it when missing.
+  ///
+  /// [category] is only the default for a newly created game. Categories of
+  /// existing ledger entries are stored on those entries and are never changed
+  /// through this method.
   Future<Game> getOrCreateGame(
       int publisherId, String name, String category) async {
-    final existing = await (select(games)
-          ..where((t) => t.publisherId.equals(publisherId) & t.name.equals(name)))
-        .getSingleOrNull();
-    if (existing != null) {
-      if (category.isNotEmpty && existing.category != category) {
-        await updateGame(
-            existing.id, GamesCompanion(category: Value(category)));
-        return (select(games)..where((t) => t.id.equals(existing.id)))
-            .getSingle();
+    final cleanedName = cleanCatalogName(name);
+    if (cleanedName.isEmpty) {
+      throw ArgumentError.value(name, 'name', 'Game name cannot be empty');
+    }
+
+    final existingForPublisher = await (select(games)
+          ..where((t) => t.publisherId.equals(publisherId)))
+        .get();
+    final key = catalogNameKey(cleanedName);
+    for (final existing in existingForPublisher) {
+      if (catalogNameKey(existing.name) == key) {
+        return existing;
       }
-      return existing;
     }
 
     final id = await into(games).insert(GamesCompanion.insert(
       publisherId: publisherId,
-      name: name,
-      category: category,
+      name: cleanedName,
+      category: category.isEmpty ? Categories.service : category,
     ));
     return (select(games)..where((t) => t.id.equals(id))).getSingle();
   }
@@ -150,14 +240,114 @@ class AppDatabase extends _$AppDatabase {
       into(publishers).insert(publisher, mode: InsertMode.insertOrIgnore);
 
   Future<Publisher> getOrCreatePublisher(String name) async {
-    final existing = await (select(publishers)
-          ..where((t) => t.name.equals(name)))
-        .getSingleOrNull();
-    if (existing != null) return existing;
+    final cleanedName = cleanCatalogName(name);
+    if (cleanedName.isEmpty) {
+      throw ArgumentError.value(name, 'name', 'Publisher name cannot be empty');
+    }
 
-    final id =
-        await into(publishers).insert(PublishersCompanion.insert(name: name));
+    final key = catalogNameKey(cleanedName);
+    final allPublishers = await getAllPublishers();
+    for (final existing in allPublishers) {
+      if (catalogNameKey(existing.name) == key) return existing;
+    }
+
+    final id = await into(publishers)
+        .insert(PublishersCompanion.insert(name: cleanedName));
     return (select(publishers)..where((t) => t.id.equals(id))).getSingle();
+  }
+
+  /// Merges historical pseudo-duplicates and rewires entries to one canonical
+  /// publisher/game pair. The lowest id is retained for stable references.
+  Future<CatalogMergeResult> mergeDuplicateCatalog() async {
+    final result = await transaction(_mergeDuplicateCatalog);
+    await _createCatalogIndexes();
+    return result;
+  }
+
+  Future<CatalogMergeResult> _mergeDuplicateCatalog() async {
+    final publisherRows = await (select(publishers)
+          ..orderBy([(t) => OrderingTerm.asc(t.id)]))
+        .get();
+    final publisherSurvivors = <String, Publisher>{};
+    final publisherTargetById = <int, int>{};
+    var publishersMerged = 0;
+
+    for (final publisher in publisherRows) {
+      final key = catalogNameKey(publisher.name);
+      final survivor = publisherSurvivors[key];
+      if (survivor == null) {
+        publisherSurvivors[key] = publisher;
+        publisherTargetById[publisher.id] = publisher.id;
+      } else {
+        publisherTargetById[publisher.id] = survivor.id;
+        publishersMerged++;
+      }
+    }
+
+    final gameRows =
+        await (select(games)..orderBy([(t) => OrderingTerm.asc(t.id)])).get();
+    final gameSurvivors = <String, Game>{};
+    final gameTargetById = <int, int>{};
+    final resolvedPublisherByGameId = <int, int>{};
+    var gamesMerged = 0;
+
+    for (final game in gameRows) {
+      final publisherId =
+          publisherTargetById[game.publisherId] ?? game.publisherId;
+      final key = '$publisherId\u0000${catalogNameKey(game.name)}';
+      final survivor = gameSurvivors[key];
+      if (survivor == null) {
+        gameSurvivors[key] = game;
+        gameTargetById[game.id] = game.id;
+        resolvedPublisherByGameId[game.id] = publisherId;
+      } else {
+        gameTargetById[game.id] = survivor.id;
+        gamesMerged++;
+      }
+    }
+
+    for (final game in gameRows) {
+      final targetId = gameTargetById[game.id]!;
+      if (targetId == game.id) continue;
+      await (update(entries)..where((t) => t.gameId.equals(game.id))).write(
+        EntriesCompanion(gameId: Value(targetId)),
+      );
+    }
+
+    for (final game in gameRows) {
+      if (gameTargetById[game.id] != game.id) {
+        await (delete(games)..where((t) => t.id.equals(game.id))).go();
+      }
+    }
+
+    for (final game in gameRows) {
+      if (gameTargetById[game.id] != game.id) continue;
+      await (update(games)..where((t) => t.id.equals(game.id))).write(
+        GamesCompanion(
+          publisherId: Value(resolvedPublisherByGameId[game.id]!),
+          name: Value(cleanCatalogName(game.name)),
+        ),
+      );
+    }
+
+    for (final publisher in publisherRows) {
+      if (publisherTargetById[publisher.id] != publisher.id) {
+        await (delete(publishers)..where((t) => t.id.equals(publisher.id)))
+            .go();
+      }
+    }
+
+    for (final publisher in publisherRows) {
+      if (publisherTargetById[publisher.id] != publisher.id) continue;
+      await (update(publishers)..where((t) => t.id.equals(publisher.id))).write(
+        PublishersCompanion(name: Value(cleanCatalogName(publisher.name))),
+      );
+    }
+
+    return CatalogMergeResult(
+      publishersMerged: publishersMerged,
+      gamesMerged: gamesMerged,
+    );
   }
 
   // ---------------------------------------------------------------------------

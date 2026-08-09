@@ -32,8 +32,9 @@ class ParsedEntry {
   double get total => price * quantity;
 
   /// Key used for duplicate detection.
-  String get dedupeKey =>
-      '${date.year}-${date.month}-${date.day}|$game|$item|$price|$quantity';
+  String get dedupeKey => '${date.year}-${date.month}-${date.day}'
+      '|${catalogNameKey(publisher)}|${catalogNameKey(game)}'
+      '|${catalogNameKey(item)}|$category|$price|$quantity';
 }
 
 /// A row that could not be parsed, with the reason.
@@ -77,7 +78,8 @@ class CsvFormatException implements Exception {
 /// without losing dates or categories.
 class CsvService {
   static const List<String> canonicalHeader = [
-    '日期', '分类', '厂商', '游戏', '项目', '单价', '数量', '总额', '备注', // Date, Category, Publisher, Game, Item, Price, Qty, Total, Note
+    '日期', '分类', '厂商', '游戏', '项目', '单价', '数量', '总额',
+    '备注', // Date, Category, Publisher, Game, Item, Price, Qty, Total, Note
   ];
 
   // Recognized header spellings (lower-cased) per logical column.
@@ -105,7 +107,7 @@ class CsvService {
     for (final d in details) {
       rows.add([
         dateFormat.format(d.entry.date),
-        d.game.category,
+        d.category,
         d.publisher.name,
         d.game.name,
         d.entry.itemName,
@@ -150,8 +152,7 @@ class CsvService {
 
     final columns = _mapHeader(header);
     if (columns == null) {
-      throw CsvFormatException(
-          'unrecognized header: ${rows.first.join(', ')}');
+      throw CsvFormatException('unrecognized header: ${rows.first.join(', ')}');
     }
     return _parseHeadered(rows, columns);
   }
@@ -337,7 +338,10 @@ class CsvService {
     final existingKeys = existing.map((d) {
       final e = d.entry;
       return '${e.date.year}-${e.date.month}-${e.date.day}'
-          '|${d.game.name}|${e.itemName}|${e.price}|${e.quantity}';
+          '|${catalogNameKey(d.publisher.name)}'
+          '|${catalogNameKey(d.game.name)}'
+          '|${catalogNameKey(e.itemName)}'
+          '|${e.category}|${e.price}|${e.quantity}';
     }).toSet();
 
     for (final p in parsed) {
@@ -362,11 +366,11 @@ class CsvService {
         if (skipDuplicates && p.isDuplicate) continue;
 
         final publisher = await db.getOrCreatePublisher(p.publisher);
-        final game =
-            await db.getOrCreateGame(publisher.id, p.game, p.category);
+        final game = await db.getOrCreateGame(publisher.id, p.game, p.category);
 
         await db.addEntry(EntriesCompanion.insert(
           gameId: game.id,
+          category: Value(p.category),
           date: p.date,
           itemName: p.item,
           price: p.price,

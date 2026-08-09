@@ -1,5 +1,29 @@
 # Changelog
 
+## 1.1.1
+
+### Fixed
+- Editing a record's category no longer changes every historical record for
+  the same game. Categories are now stored per ledger entry.
+- Publisher names and publisher/game pairs are normalized and merged during
+  the v3 database migration; case, repeated whitespace and invisible spacing
+  no longer create pseudo-duplicate catalog records.
+- CSV duplicate detection now includes the publisher/game pair and per-entry
+  category.
+
+### Added
+- Entry detail view with exact record information, first/latest occurrence,
+  covered days, monthly totals and a same-item timeline. Dashboard drill-down
+  rows and history rows both open this view.
+
+### Changed
+- JSON backup format v2 preserves per-entry categories while remaining able to
+  restore v1 backups.
+- Database schema v3 migrates existing game categories onto entries and keeps
+  catalog references stable while merging duplicates.
+- Android release APKs now exclude unused locales and Cupertino icon assets,
+  and compress native libraries for a smaller standalone download.
+
 ## 1.1.0
 
 ### Fixed

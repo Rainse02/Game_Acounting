@@ -35,7 +35,7 @@ class BackupData {
 /// Lossless JSON backup and restore of the whole database, including the
 /// publisher/game relations that a flat CSV cannot represent.
 class BackupService {
-  static const int currentVersion = 1;
+  static const int currentVersion = 2;
 
   // ---------------------------------------------------------------------------
   // Export
@@ -70,6 +70,7 @@ class BackupService {
           {
             'id': e.id,
             'gameId': e.gameId,
+            'category': e.category,
             'date': e.date.toIso8601String(),
             'itemName': e.itemName,
             'price': e.price,
@@ -141,31 +142,58 @@ class BackupService {
       await db.delete(db.entries).go();
       await db.delete(db.games).go();
       await db.delete(db.publishers).go();
+      await db.delete(db.settings).go();
 
+      final publisherIdMap = <int, int>{};
       for (final p in data.publishers) {
-        await db.into(db.publishers).insert(PublishersCompanion(
-              id: Value(p['id'] as int),
-              name: Value(p['name'] as String),
-              iconPath: Value(p['iconPath'] as String?),
-            ));
+        final sourceId = p['id'] as int;
+        final publisher = await db.getOrCreatePublisher(p['name'] as String);
+        publisherIdMap[sourceId] = publisher.id;
+
+        final iconPath = p['iconPath'] as String?;
+        if (publisher.iconPath == null && iconPath != null) {
+          await (db.update(db.publishers)
+                ..where((table) => table.id.equals(publisher.id)))
+              .write(PublishersCompanion(iconPath: Value(iconPath)));
+        }
       }
 
+      final gameIdMap = <int, int>{};
+      final sourceGameCategories = <int, String>{};
       for (final g in data.games) {
-        await db.into(db.games).insert(GamesCompanion(
-              id: Value(g['id'] as int),
-              publisherId: Value(g['publisherId'] as int),
-              name: Value(g['name'] as String),
-              category: Value(g['category'] as String? ?? Categories.service),
-              iconPath: Value(g['iconPath'] as String?),
-            ));
+        final sourceId = g['id'] as int;
+        final publisherId = publisherIdMap[g['publisherId'] as int];
+        if (publisherId == null) continue;
+
+        final category = g['category'] as String? ?? Categories.service;
+        final game = await db.getOrCreateGame(
+          publisherId,
+          g['name'] as String,
+          category,
+        );
+        gameIdMap[sourceId] = game.id;
+        sourceGameCategories[sourceId] = category;
+
+        final iconPath = g['iconPath'] as String?;
+        if (game.iconPath == null && iconPath != null) {
+          await db.updateGame(
+            game.id,
+            GamesCompanion(iconPath: Value(iconPath)),
+          );
+        }
       }
 
       for (final e in data.entries) {
         final date = DateTime.tryParse(e['date']?.toString() ?? '');
-        if (date == null) continue;
+        final sourceGameId = e['gameId'] as int;
+        final gameId = gameIdMap[sourceGameId];
+        if (date == null || gameId == null) continue;
         await db.into(db.entries).insert(EntriesCompanion(
               id: Value(e['id'] as int),
-              gameId: Value(e['gameId'] as int),
+              gameId: Value(gameId),
+              category: Value(e['category'] as String? ??
+                  sourceGameCategories[sourceGameId] ??
+                  Categories.service),
               date: Value(date),
               itemName: Value(e['itemName'] as String),
               price: Value((e['price'] as num).toDouble()),

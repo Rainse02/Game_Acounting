@@ -4,7 +4,7 @@ import 'package:provider/provider.dart';
 
 import '../data/database.dart';
 import 'common.dart';
-import 'entry_edit_screen.dart';
+import 'entry_detail_screen.dart';
 
 class EntryListScreen extends StatefulWidget {
   const EntryListScreen({super.key});
@@ -33,14 +33,13 @@ class _EntryListScreenState extends State<EntryListScreen> {
   List<EntryDetail> _applyFilters(List<EntryDetail> all) {
     return all.where((d) {
       if (_selectedCategories.isNotEmpty &&
-          !_selectedCategories.contains(d.game.category)) {
+          !_selectedCategories.contains(d.category)) {
         return false;
       }
       if (_dateRange != null) {
-        final date = DateTime(
-            d.entry.date.year, d.entry.date.month, d.entry.date.day);
-        if (date.isBefore(_dateRange!.start) ||
-            date.isAfter(_dateRange!.end)) {
+        final date =
+            DateTime(d.entry.date.year, d.entry.date.month, d.entry.date.day);
+        if (date.isBefore(_dateRange!.start) || date.isAfter(_dateRange!.end)) {
           return false;
         }
       }
@@ -214,12 +213,10 @@ class _EntryListScreenState extends State<EntryListScreen> {
       final monthKey = DateFormat('yyyy-MM').format(d.entry.date);
       if (monthKey != currentMonth) {
         currentMonth = monthKey;
-        final monthDetails = details.where((x) =>
-            DateFormat('yyyy-MM').format(x.entry.date) == monthKey);
-        final subtotal =
-            monthDetails.fold(0.0, (sum, x) => sum + x.total);
-        items.add(_ListItem.header(
-            monthKey, subtotal, monthDetails.length));
+        final monthDetails = details.where(
+            (x) => DateFormat('yyyy-MM').format(x.entry.date) == monthKey);
+        final subtotal = monthDetails.fold(0.0, (sum, x) => sum + x.total);
+        items.add(_ListItem.header(monthKey, subtotal, monthDetails.length));
       }
       items.add(_ListItem.entry(d));
     }
@@ -244,13 +241,13 @@ class _EntryListScreenState extends State<EntryListScreen> {
     final totalAmount = filtered.fold(0.0, (sum, e) => sum + e.total);
 
     final libraryTotal = filtered
-        .where((e) => e.game.category == Categories.library)
+        .where((e) => e.category == Categories.library)
         .fold(0.0, (sum, e) => sum + e.total);
     final serviceTotal = filtered
-        .where((e) => e.game.category == Categories.service)
+        .where((e) => e.category == Categories.service)
         .fold(0.0, (sum, e) => sum + e.total);
     final hardwareTotal = filtered
-        .where((e) => e.game.category == Categories.hardware)
+        .where((e) => e.category == Categories.hardware)
         .fold(0.0, (sum, e) => sum + e.total);
 
     final isZh = Localizations.localeOf(context).languageCode == 'zh';
@@ -365,8 +362,7 @@ class _EntryListScreenState extends State<EntryListScreen> {
   Widget _buildMonthHeader(_ListItem item) {
     final l10n = context.l10n;
     final parts = item.monthKey!.split('-');
-    final label = DateFormat.yMMMM(
-            Localizations.localeOf(context).toString())
+    final label = DateFormat.yMMMM(Localizations.localeOf(context).toString())
         .format(DateTime(int.parse(parts[0]), int.parse(parts[1])));
 
     return Padding(
@@ -408,8 +404,8 @@ class _EntryListScreenState extends State<EntryListScreen> {
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
         child: ListTile(
           leading: CircleAvatar(
-            backgroundColor: categoryColor(game.category),
-            child: Icon(categoryIcon(game.category), color: Colors.white),
+            backgroundColor: categoryColor(detail.category),
+            child: Icon(categoryIcon(detail.category), color: Colors.white),
           ),
           title: Text(entry.itemName),
           subtitle: Text(
@@ -428,14 +424,14 @@ class _EntryListScreenState extends State<EntryListScreen> {
               ),
               if (entry.quantity > 1)
                 Text('x${entry.quantity}',
-                    style:
-                        const TextStyle(fontSize: 12, color: Colors.grey)),
+                    style: const TextStyle(fontSize: 12, color: Colors.grey)),
             ],
           ),
           onTap: () {
             Navigator.of(context).push(
               MaterialPageRoute(
-                builder: (context) => EntryEditScreen(existing: detail),
+                builder: (context) =>
+                    EntryDetailScreen(entryId: detail.entry.id),
               ),
             );
           },

@@ -40,7 +40,7 @@ class _EntryEditScreenState extends State<EntryEditScreen> {
       final entry = existing.entry;
       _gameController.text = existing.game.name;
       _publisherController.text = existing.publisher.name;
-      _category = existing.game.category;
+      _category = entry.category;
       _itemNameController.text = entry.itemName;
       _priceController.text = entry.price.toStringAsFixed(
           entry.price.truncateToDouble() == entry.price ? 0 : 2);
@@ -92,23 +92,25 @@ class _EntryEditScreenState extends State<EntryEditScreen> {
 
     final db = context.read<AppDatabase>();
     final l10n = context.l10n;
-    final gameId = await _resolveGameId(db);
+    await db.transaction(() async {
+      final gameId = await _resolveGameId(db);
+      final companion = EntriesCompanion(
+        gameId: drift.Value(gameId),
+        category: drift.Value(_category!),
+        date: drift.Value(_selectedDate),
+        itemName: drift.Value(_itemNameController.text.trim()),
+        price: drift.Value(double.parse(_priceController.text)),
+        quantity: drift.Value(int.parse(_quantityController.text)),
+        note: drift.Value(
+            _noteController.text.isEmpty ? null : _noteController.text),
+      );
 
-    final companion = EntriesCompanion(
-      gameId: drift.Value(gameId),
-      date: drift.Value(_selectedDate),
-      itemName: drift.Value(_itemNameController.text.trim()),
-      price: drift.Value(double.parse(_priceController.text)),
-      quantity: drift.Value(int.parse(_quantityController.text)),
-      note: drift.Value(
-          _noteController.text.isEmpty ? null : _noteController.text),
-    );
-
-    if (_isEditing) {
-      await db.updateEntry(widget.existing!.entry.id, companion);
-    } else {
-      await db.addEntry(companion);
-    }
+      if (_isEditing) {
+        await db.updateEntry(widget.existing!.entry.id, companion);
+      } else {
+        await db.addEntry(companion);
+      }
+    });
 
     if (mounted) {
       ScaffoldMessenger.of(context)
@@ -133,8 +135,7 @@ class _EntryEditScreenState extends State<EntryEditScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(l10n.delete,
-                style: const TextStyle(color: Colors.red)),
+            child: Text(l10n.delete, style: const TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -170,26 +171,55 @@ class _EntryEditScreenState extends State<EntryEditScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Autocomplete<Game>(
+              Autocomplete<GameSuggestion>(
                 initialValue: TextEditingValue(text: _gameController.text),
-                displayStringForOption: (Game option) => option.name,
+                displayStringForOption: (option) => option.game.name,
                 optionsBuilder: (TextEditingValue textEditingValue) async {
                   if (textEditingValue.text.isEmpty) {
-                    return const Iterable<Game>.empty();
+                    return const Iterable<GameSuggestion>.empty();
                   }
-                  return await db.searchGames(textEditingValue.text);
+                  return db.searchGameSuggestions(textEditingValue.text);
                 },
-                onSelected: (Game selection) async {
+                optionsViewBuilder: (context, onSelected, options) {
+                  final items = options.toList();
+                  final screenWidth = MediaQuery.sizeOf(context).width;
+                  final optionsWidth =
+                      screenWidth > 552 ? 520.0 : screenWidth - 32;
+                  return Align(
+                    alignment: Alignment.topLeft,
+                    child: Material(
+                      elevation: 4,
+                      borderRadius: BorderRadius.circular(12),
+                      clipBehavior: Clip.antiAlias,
+                      child: SizedBox(
+                        width: optionsWidth,
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxHeight: 280),
+                          child: ListView.builder(
+                            padding: EdgeInsets.zero,
+                            shrinkWrap: true,
+                            itemCount: items.length,
+                            itemBuilder: (context, index) {
+                              final option = items[index];
+                              return ListTile(
+                                dense: true,
+                                title: Text(option.game.name),
+                                subtitle: Text(option.publisher.name),
+                                onTap: () => onSelected(option),
+                              );
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                },
+                onSelected: (GameSuggestion selection) {
                   setState(() {
-                    _gameController.text = selection.name;
-                    _category = selection.category;
+                    _gameController.text = selection.game.name;
+                    _publisherController.text = selection.publisher.name;
+                    _category = selection.game.category;
                   });
-                  final pub = await db.getPublisherById(selection.publisherId);
-                  if (pub != null && mounted) {
-                    setState(() {
-                      _publisherController.text = pub.name;
-                    });
-                  }
                 },
                 fieldViewBuilder:
                     (context, controller, focusNode, onFieldSubmitted) {

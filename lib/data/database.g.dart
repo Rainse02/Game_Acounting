@@ -550,6 +550,14 @@ class $EntriesTable extends Entries with TableInfo<$EntriesTable, Entry> {
       requiredDuringInsert: true,
       defaultConstraints:
           GeneratedColumn.constraintIsAlways('REFERENCES games (id)'));
+  static const VerificationMeta _categoryMeta =
+      const VerificationMeta('category');
+  @override
+  late final GeneratedColumn<String> category = GeneratedColumn<String>(
+      'category', aliasedName, false,
+      type: DriftSqlType.string,
+      requiredDuringInsert: false,
+      defaultValue: const Constant(Categories.service));
   static const VerificationMeta _dateMeta = const VerificationMeta('date');
   @override
   late final GeneratedColumn<DateTime> date = GeneratedColumn<DateTime>(
@@ -581,7 +589,7 @@ class $EntriesTable extends Entries with TableInfo<$EntriesTable, Entry> {
       type: DriftSqlType.string, requiredDuringInsert: false);
   @override
   List<GeneratedColumn> get $columns =>
-      [id, gameId, date, itemName, price, quantity, note];
+      [id, gameId, category, date, itemName, price, quantity, note];
   @override
   String get aliasedName => _alias ?? actualTableName;
   @override
@@ -600,6 +608,10 @@ class $EntriesTable extends Entries with TableInfo<$EntriesTable, Entry> {
           gameId.isAcceptableOrUnknown(data['game_id']!, _gameIdMeta));
     } else if (isInserting) {
       context.missing(_gameIdMeta);
+    }
+    if (data.containsKey('category')) {
+      context.handle(_categoryMeta,
+          category.isAcceptableOrUnknown(data['category']!, _categoryMeta));
     }
     if (data.containsKey('date')) {
       context.handle(
@@ -640,6 +652,8 @@ class $EntriesTable extends Entries with TableInfo<$EntriesTable, Entry> {
           .read(DriftSqlType.int, data['${effectivePrefix}id'])!,
       gameId: attachedDatabase.typeMapping
           .read(DriftSqlType.int, data['${effectivePrefix}game_id'])!,
+      category: attachedDatabase.typeMapping
+          .read(DriftSqlType.string, data['${effectivePrefix}category'])!,
       date: attachedDatabase.typeMapping
           .read(DriftSqlType.dateTime, data['${effectivePrefix}date'])!,
       itemName: attachedDatabase.typeMapping
@@ -662,6 +676,7 @@ class $EntriesTable extends Entries with TableInfo<$EntriesTable, Entry> {
 class Entry extends DataClass implements Insertable<Entry> {
   final int id;
   final int gameId;
+  final String category;
   final DateTime date;
   final String itemName;
   final double price;
@@ -670,6 +685,7 @@ class Entry extends DataClass implements Insertable<Entry> {
   const Entry(
       {required this.id,
       required this.gameId,
+      required this.category,
       required this.date,
       required this.itemName,
       required this.price,
@@ -680,6 +696,7 @@ class Entry extends DataClass implements Insertable<Entry> {
     final map = <String, Expression>{};
     map['id'] = Variable<int>(id);
     map['game_id'] = Variable<int>(gameId);
+    map['category'] = Variable<String>(category);
     map['date'] = Variable<DateTime>(date);
     map['item_name'] = Variable<String>(itemName);
     map['price'] = Variable<double>(price);
@@ -694,6 +711,7 @@ class Entry extends DataClass implements Insertable<Entry> {
     return EntriesCompanion(
       id: Value(id),
       gameId: Value(gameId),
+      category: Value(category),
       date: Value(date),
       itemName: Value(itemName),
       price: Value(price),
@@ -708,6 +726,7 @@ class Entry extends DataClass implements Insertable<Entry> {
     return Entry(
       id: serializer.fromJson<int>(json['id']),
       gameId: serializer.fromJson<int>(json['gameId']),
+      category: serializer.fromJson<String>(json['category']),
       date: serializer.fromJson<DateTime>(json['date']),
       itemName: serializer.fromJson<String>(json['itemName']),
       price: serializer.fromJson<double>(json['price']),
@@ -721,6 +740,7 @@ class Entry extends DataClass implements Insertable<Entry> {
     return <String, dynamic>{
       'id': serializer.toJson<int>(id),
       'gameId': serializer.toJson<int>(gameId),
+      'category': serializer.toJson<String>(category),
       'date': serializer.toJson<DateTime>(date),
       'itemName': serializer.toJson<String>(itemName),
       'price': serializer.toJson<double>(price),
@@ -732,6 +752,7 @@ class Entry extends DataClass implements Insertable<Entry> {
   Entry copyWith(
           {int? id,
           int? gameId,
+          String? category,
           DateTime? date,
           String? itemName,
           double? price,
@@ -740,6 +761,7 @@ class Entry extends DataClass implements Insertable<Entry> {
       Entry(
         id: id ?? this.id,
         gameId: gameId ?? this.gameId,
+        category: category ?? this.category,
         date: date ?? this.date,
         itemName: itemName ?? this.itemName,
         price: price ?? this.price,
@@ -750,6 +772,7 @@ class Entry extends DataClass implements Insertable<Entry> {
     return Entry(
       id: data.id.present ? data.id.value : this.id,
       gameId: data.gameId.present ? data.gameId.value : this.gameId,
+      category: data.category.present ? data.category.value : this.category,
       date: data.date.present ? data.date.value : this.date,
       itemName: data.itemName.present ? data.itemName.value : this.itemName,
       price: data.price.present ? data.price.value : this.price,
@@ -763,6 +786,7 @@ class Entry extends DataClass implements Insertable<Entry> {
     return (StringBuffer('Entry(')
           ..write('id: $id, ')
           ..write('gameId: $gameId, ')
+          ..write('category: $category, ')
           ..write('date: $date, ')
           ..write('itemName: $itemName, ')
           ..write('price: $price, ')
@@ -774,13 +798,14 @@ class Entry extends DataClass implements Insertable<Entry> {
 
   @override
   int get hashCode =>
-      Object.hash(id, gameId, date, itemName, price, quantity, note);
+      Object.hash(id, gameId, category, date, itemName, price, quantity, note);
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
       (other is Entry &&
           other.id == this.id &&
           other.gameId == this.gameId &&
+          other.category == this.category &&
           other.date == this.date &&
           other.itemName == this.itemName &&
           other.price == this.price &&
@@ -791,6 +816,7 @@ class Entry extends DataClass implements Insertable<Entry> {
 class EntriesCompanion extends UpdateCompanion<Entry> {
   final Value<int> id;
   final Value<int> gameId;
+  final Value<String> category;
   final Value<DateTime> date;
   final Value<String> itemName;
   final Value<double> price;
@@ -799,6 +825,7 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
   const EntriesCompanion({
     this.id = const Value.absent(),
     this.gameId = const Value.absent(),
+    this.category = const Value.absent(),
     this.date = const Value.absent(),
     this.itemName = const Value.absent(),
     this.price = const Value.absent(),
@@ -808,6 +835,7 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
   EntriesCompanion.insert({
     this.id = const Value.absent(),
     required int gameId,
+    this.category = const Value.absent(),
     required DateTime date,
     required String itemName,
     required double price,
@@ -820,6 +848,7 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
   static Insertable<Entry> custom({
     Expression<int>? id,
     Expression<int>? gameId,
+    Expression<String>? category,
     Expression<DateTime>? date,
     Expression<String>? itemName,
     Expression<double>? price,
@@ -829,6 +858,7 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
     return RawValuesInsertable({
       if (id != null) 'id': id,
       if (gameId != null) 'game_id': gameId,
+      if (category != null) 'category': category,
       if (date != null) 'date': date,
       if (itemName != null) 'item_name': itemName,
       if (price != null) 'price': price,
@@ -840,6 +870,7 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
   EntriesCompanion copyWith(
       {Value<int>? id,
       Value<int>? gameId,
+      Value<String>? category,
       Value<DateTime>? date,
       Value<String>? itemName,
       Value<double>? price,
@@ -848,6 +879,7 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
     return EntriesCompanion(
       id: id ?? this.id,
       gameId: gameId ?? this.gameId,
+      category: category ?? this.category,
       date: date ?? this.date,
       itemName: itemName ?? this.itemName,
       price: price ?? this.price,
@@ -864,6 +896,9 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
     }
     if (gameId.present) {
       map['game_id'] = Variable<int>(gameId.value);
+    }
+    if (category.present) {
+      map['category'] = Variable<String>(category.value);
     }
     if (date.present) {
       map['date'] = Variable<DateTime>(date.value);
@@ -888,6 +923,7 @@ class EntriesCompanion extends UpdateCompanion<Entry> {
     return (StringBuffer('EntriesCompanion(')
           ..write('id: $id, ')
           ..write('gameId: $gameId, ')
+          ..write('category: $category, ')
           ..write('date: $date, ')
           ..write('itemName: $itemName, ')
           ..write('price: $price, ')
@@ -1652,6 +1688,7 @@ typedef $$GamesTableProcessedTableManager = ProcessedTableManager<
 typedef $$EntriesTableCreateCompanionBuilder = EntriesCompanion Function({
   Value<int> id,
   required int gameId,
+  Value<String> category,
   required DateTime date,
   required String itemName,
   required double price,
@@ -1661,6 +1698,7 @@ typedef $$EntriesTableCreateCompanionBuilder = EntriesCompanion Function({
 typedef $$EntriesTableUpdateCompanionBuilder = EntriesCompanion Function({
   Value<int> id,
   Value<int> gameId,
+  Value<String> category,
   Value<DateTime> date,
   Value<String> itemName,
   Value<double> price,
@@ -1698,6 +1736,9 @@ class $$EntriesTableFilterComposer
   });
   ColumnFilters<int> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnFilters(column));
+
+  ColumnFilters<String> get category => $composableBuilder(
+      column: $table.category, builder: (column) => ColumnFilters(column));
 
   ColumnFilters<DateTime> get date => $composableBuilder(
       column: $table.date, builder: (column) => ColumnFilters(column));
@@ -1747,6 +1788,9 @@ class $$EntriesTableOrderingComposer
   ColumnOrderings<int> get id => $composableBuilder(
       column: $table.id, builder: (column) => ColumnOrderings(column));
 
+  ColumnOrderings<String> get category => $composableBuilder(
+      column: $table.category, builder: (column) => ColumnOrderings(column));
+
   ColumnOrderings<DateTime> get date => $composableBuilder(
       column: $table.date, builder: (column) => ColumnOrderings(column));
 
@@ -1794,6 +1838,9 @@ class $$EntriesTableAnnotationComposer
   });
   GeneratedColumn<int> get id =>
       $composableBuilder(column: $table.id, builder: (column) => column);
+
+  GeneratedColumn<String> get category =>
+      $composableBuilder(column: $table.category, builder: (column) => column);
 
   GeneratedColumn<DateTime> get date =>
       $composableBuilder(column: $table.date, builder: (column) => column);
@@ -1856,6 +1903,7 @@ class $$EntriesTableTableManager extends RootTableManager<
           updateCompanionCallback: ({
             Value<int> id = const Value.absent(),
             Value<int> gameId = const Value.absent(),
+            Value<String> category = const Value.absent(),
             Value<DateTime> date = const Value.absent(),
             Value<String> itemName = const Value.absent(),
             Value<double> price = const Value.absent(),
@@ -1865,6 +1913,7 @@ class $$EntriesTableTableManager extends RootTableManager<
               EntriesCompanion(
             id: id,
             gameId: gameId,
+            category: category,
             date: date,
             itemName: itemName,
             price: price,
@@ -1874,6 +1923,7 @@ class $$EntriesTableTableManager extends RootTableManager<
           createCompanionCallback: ({
             Value<int> id = const Value.absent(),
             required int gameId,
+            Value<String> category = const Value.absent(),
             required DateTime date,
             required String itemName,
             required double price,
@@ -1883,6 +1933,7 @@ class $$EntriesTableTableManager extends RootTableManager<
               EntriesCompanion.insert(
             id: id,
             gameId: gameId,
+            category: category,
             date: date,
             itemName: itemName,
             price: price,

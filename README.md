@@ -1,4 +1,4 @@
-# 🎮 GameA (游戏账本) v1.1.0
+# 🎮 GameA (游戏账本) v1.1.1
 
 一个简洁、优雅且功能强大的跨平台（Android & Windows）游戏消费记账与数据分析应用。  
 *A sleek, intuitive, and cross-platform game spending tracker and financial analytics app.*

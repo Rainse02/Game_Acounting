@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../data/database.dart';
 import 'common.dart';
+import 'entry_detail_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({super.key});
@@ -53,7 +54,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           var filtered = _selectedCategory == 'All'
               ? allEntries
               : allEntries
-                  .where((e) => e.game.category == _selectedCategory)
+                  .where((e) => e.category == _selectedCategory)
                   .toList();
           if (_selectedYear != null) {
             filtered = filtered
@@ -222,8 +223,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       if (budget != null && budget > 0)
                         Text(
                           '${l10n.monthlyBudget}: ${money(budget)}',
-                          style: const TextStyle(
-                              fontSize: 12, color: Colors.grey),
+                          style:
+                              const TextStyle(fontSize: 12, color: Colors.grey),
                         ),
                     ],
                   ),
@@ -344,8 +345,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             const SizedBox(height: 4),
             Text(
               value,
-              style:
-                  const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
               overflow: TextOverflow.ellipsis,
             ),
           ],
@@ -365,9 +365,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
     };
 
     for (final entry in entries) {
-      final category = entry.game.category;
-      categoryTotals[category] =
-          (categoryTotals[category] ?? 0) + entry.total;
+      final category = entry.category;
+      categoryTotals[category] = (categoryTotals[category] ?? 0) + entry.total;
     }
 
     final sections = <PieChartSectionData>[];
@@ -410,7 +409,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         context,
                         categoryLabel(context, categoryKey),
                         entries
-                            .where((e) => e.game.category == categoryKey)
+                            .where((e) => e.category == categoryKey)
                             .toList(),
                       );
                     }
@@ -467,8 +466,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       return Center(child: Text(l10n.noCategoryData));
     }
 
-    final maxTotal =
-        totals.values.reduce((a, b) => a > b ? a : b);
+    final maxTotal = totals.values.reduce((a, b) => a > b ? a : b);
 
     return Column(
       children: [
@@ -484,8 +482,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   if (event is FlTapUpEvent &&
                       barTouchResponse != null &&
                       barTouchResponse.spot != null) {
-                    final index =
-                        barTouchResponse.spot!.touchedBarGroupIndex;
+                    final index = barTouchResponse.spot!.touchedBarGroupIndex;
                     if (index >= 0 && index < keys.length) {
                       final key = keys[index];
                       _showDrillDown(context, labels[key]!, buckets[key]!);
@@ -502,8 +499,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       children: [
                         TextSpan(
                           text: money(rod.toY),
-                          style:
-                              const TextStyle(color: Colors.yellowAccent),
+                          style: const TextStyle(color: Colors.yellowAccent),
                         ),
                       ],
                     );
@@ -528,12 +524,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     },
                   ),
                 ),
-                leftTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false)),
-                topTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false)),
-                rightTitles: const AxisTitles(
-                    sideTitles: SideTitles(showTitles: false)),
+                leftTitles:
+                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                topTitles:
+                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles:
+                    const AxisTitles(sideTitles: SideTitles(showTitles: false)),
               ),
               gridData: const FlGridData(show: false),
               borderData: FlBorderData(show: false),
@@ -546,8 +542,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       toY: totals[key]!,
                       color: Theme.of(context).colorScheme.primary,
                       width: 16,
-                      borderRadius: const BorderRadius.vertical(
-                          top: Radius.circular(4)),
+                      borderRadius:
+                          const BorderRadius.vertical(top: Radius.circular(4)),
                     ),
                   ],
                 );
@@ -570,9 +566,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   void _showDrillDown(
       BuildContext context, String title, List<EntryDetail> filteredEntries) {
-    final gameGroups = <String, List<EntryDetail>>{};
+    final gameGroups = <int, List<EntryDetail>>{};
     for (final e in filteredEntries) {
-      gameGroups.putIfAbsent(e.game.name, () => []).add(e);
+      gameGroups.putIfAbsent(e.game.id, () => []).add(e);
     }
 
     showModalBottomSheet(
@@ -600,22 +596,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   controller: scrollController,
                   itemCount: gameGroups.length,
                   itemBuilder: (context, index) {
-                    final gameName = gameGroups.keys.elementAt(index);
-                    final groupEntries = gameGroups[gameName]!;
-                    final gameTotal = groupEntries.fold(
-                        0.0, (sum, e) => sum + e.total);
+                    final gameId = gameGroups.keys.elementAt(index);
+                    final groupEntries = gameGroups[gameId]!;
+                    final representative = groupEntries.first;
+                    final gameTotal =
+                        groupEntries.fold(0.0, (sum, e) => sum + e.total);
 
                     return ExpansionTile(
-                      title: Text(gameName),
+                      title: Text(representative.game.name),
+                      subtitle: Text(representative.publisher.name),
                       trailing: Text(money(gameTotal),
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold)),
+                          style: const TextStyle(fontWeight: FontWeight.bold)),
                       children: groupEntries
                           .map((e) => ListTile(
                                 title: Text(e.entry.itemName),
                                 subtitle: Text(DateFormat('yyyy-MM-dd')
                                     .format(e.entry.date)),
                                 trailing: Text(money(e.total)),
+                                onTap: () => Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder: (context) => EntryDetailScreen(
+                                      entryId: e.entry.id,
+                                    ),
+                                  ),
+                                ),
                               ))
                           .toList(),
                     );

@@ -35,6 +35,19 @@ android {
         targetSdk = 36
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        // The Flutter UI only exposes these locales. Exclude unused Android
+        // library translations from the standalone APK.
+        resourceConfigurations += listOf("en", "zh")
+    }
+
+    packaging {
+        jniLibs {
+            // Compress native libraries inside standalone APKs. Android will
+            // extract them during installation, trading installed size for a
+            // materially smaller APK download.
+            useLegacyPackaging = true
+        }
     }
 
     signingConfigs {

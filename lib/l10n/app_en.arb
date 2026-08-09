@@ -60,6 +60,24 @@
       "count": {"type": "String"}
     }
   },
+  "entryDetailsTitle": "Entry details",
+  "edit": "Edit",
+  "recordInformation": "This entry",
+  "itemTimeline": "Item time statistics",
+  "firstRecord": "First recorded",
+  "lastRecord": "Most recent",
+  "timeSpan": "Days covered",
+  "daysCount": "{count} days",
+  "@daysCount": {
+    "placeholders": {
+      "count": {"type": "String"}
+    }
+  },
+  "monthlyBreakdown": "Monthly breakdown",
+  "recordTimeline": "Entry timeline",
+  "entryNotFound": "This entry no longer exists",
+  "selectedEntry": "Selected",
+  "note": "Note",
 
   "newEntryTitle": "Add entry",
   "editEntryTitle": "Edit entry",
